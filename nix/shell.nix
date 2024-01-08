@@ -19,7 +19,6 @@ cabalProject:
 
   preCommit = {
     cabal-fmt.enable = true;
-    stylish-haskell.enable = true;
     nixpkgs-fmt.enable = true;
   };
 }
