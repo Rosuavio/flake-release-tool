@@ -21,21 +21,6 @@ let
 
       compiler-nix-name = lib.mkDefault "ghc8107";
 
-      # flake.variants.profiled = {
-      #   modules = [{
-      #     enableProfiling = true;
-      #     enableLibraryProfiling = true;
-      #   }];
-      # };
-
-      # flake.variants.ghc928 = {
-      #   compiler-nix-name = "ghc928";
-      # };
-
-      # flake.variants.ghc964 = {
-      #   compiler-nix-name = "ghc964";
-      # };
-
       modules =
         [
           {
@@ -55,22 +40,6 @@ let
     inherit cabalProject;
 
     shellArgs = repoRoot.nix.shell;
-
-    # includeMingwW64HydraJobs = false;
-
-    # includeProfiledHydraJobs = false;
-
-    # readTheDocs = {
-    #   enable = false;
-    #   siteFolder = "doc/read-the-docs-site";
-    #   sphinxToolchain = null;
-    # };
-
-    # combinedHaddock = {
-    #   enable = false;
-    #   prologue = "";
-    #   packages = [];
-    # };
   };
 
 in
