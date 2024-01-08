@@ -1,0 +1,46 @@
+cabal-version:   3.8
+name:            flake-release-tool
+version:         0.1.0.0
+license:         Apache-2.0
+license-file:    LICENSE
+author:          IOHK
+maintainer:      operactions@iogk.io
+synopsis:        Create software releases from nix projects
+description:
+  A tool to create software releases from git repos using nix flakes
+
+category:        Automation
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+source-repository head
+  type:     git
+  location: https://github.com/input-output-hk/flake-release-tool
+
+common lang
+  default-language: Haskell2010
+  ghc-options:      -Wall
+
+library
+  import:          lang
+  exposed-modules: MyLib
+  build-depends:   base ^>=4.14.3.0
+  hs-source-dirs:  src
+
+executable flake-release-tool
+  import:         lang
+  main-is:        Main.hs
+  build-depends:
+    , base                ^>=4.14.3.0
+    , flake-release-tool
+
+  hs-source-dirs: app
+
+test-suite flake-release-tool-test
+  import:         lang
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is:        Main.hs
+  build-depends:
+    , base                ^>=4.14.3.0
+    , flake-release-tool
