@@ -9,6 +9,7 @@ synopsis:        Create software releases from nix projects
 description:
   A tool to create software releases from git repos using nix flakes
 
+homepage:        https://github.com/input-output-hk/flake-release-tool
 category:        Automation
 build-type:      Simple
 extra-doc-files: CHANGELOG.md
