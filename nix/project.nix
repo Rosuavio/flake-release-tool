@@ -19,7 +19,7 @@ let
 
       name = "my-project";
 
-      compiler-nix-name = lib.mkDefault "ghc8107";
+      compiler-nix-name = lib.mkDefault "ghc96";
 
       modules =
         [
