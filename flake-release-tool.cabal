@@ -32,8 +32,9 @@ executable flake-release-tool
   import:         lang
   main-is:        Main.hs
   build-depends:
-    , base                ^>=4.18.1.0
+    , base                  ^>=4.18.1.0
     , flake-release-tool
+    , optparse-applicative
 
   hs-source-dirs: app
 
