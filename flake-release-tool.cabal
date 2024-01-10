@@ -4,7 +4,7 @@ version:         0.1.0.0
 license:         Apache-2.0
 license-file:    LICENSE
 author:          IOHK
-maintainer:      operactions@iogk.io
+maintainer:      operations@iohk.io
 synopsis:        Create software releases from nix projects
 description:
   A tool to create software releases from git repos using nix flakes
