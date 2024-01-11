@@ -1,0 +1,7 @@
+description:
+  include-github-generated-release-notes: true
+git:
+  tag:
+github:
+  release:
+    always-publish: True
