@@ -21,7 +21,6 @@ source-repository head
 common lang
   default-language:   Haskell2010
   default-extensions:
-    DeriveGeneric
     ImportQualifiedPost
     OverloadedStrings
     TypeApplications
@@ -36,15 +35,31 @@ library
 executable flake-release-tool
   import:         lang
   main-is:        Main.hs
-  other-modules:  Foo
+  other-modules:
+    Action
+    Change
+    Checks
+    Config
+    Indicator
+    Obj
+    ObjCheck
+    ObjGraph
+    Sys
+
   build-depends:
     , base                  ^>=4.18.1.0
+    , binary
     , bytestring
+    , containers
     , data-default
+    , extra
     , flake-release-tool
     , HsYAML
     , lens
+    , nonempty-containers
     , optparse-applicative
+    , prettyprinter
+    , typed-process
 
   hs-source-dirs: app
 

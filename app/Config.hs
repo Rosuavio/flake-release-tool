@@ -5,7 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TemplateHaskell        #-}
 
-module Foo where
+module Config where
 
 import GHC.Generics
 

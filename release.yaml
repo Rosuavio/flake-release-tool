@@ -2,6 +2,7 @@ description:
   include-github-generated-release-notes: true
 git:
   tag:
+    always-publish: True
 github:
   release:
     always-publish: True
