@@ -1,12 +1,11 @@
 module Checks where
 
+import Data.Text
 import Sys
-
-import Data.ByteString.Lazy qualified as BS
 
 type Check = IO Bool
 
-checkGitTagIsOfHead :: String -> IO (Bool)
+checkGitTagIsOfHead :: GitTag -> IO (Bool)
 checkGitTagIsOfHead tag = do
   mTagCommit <- getCommitOfTag tag
   mHeadCommit <- getCommitOfHead
@@ -14,7 +13,7 @@ checkGitTagIsOfHead tag = do
     (Just tagCommit, Just headCommit) -> tagCommit == headCommit
     _                                 -> False
 
-checkGitCommitMatchesHead :: BS.ByteString -> IO (Bool)
+checkGitCommitMatchesHead :: Text -> IO (Bool)
 checkGitCommitMatchesHead commit = do
   mHeadCommit <- getCommitOfHead
   pure $ case mHeadCommit of

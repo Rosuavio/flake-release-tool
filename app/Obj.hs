@@ -4,6 +4,8 @@ module Obj where
 
 import Sys
 
+import Data.Text
+
 data Objective
   = LocalTag GitTag
   | TagOnGH GitTag
@@ -11,7 +13,7 @@ data Objective
   deriving (Eq, Ord, Show)
 
 
-objectiveDescription :: Objective -> String
-objectiveDescription (LocalTag tag) = "HEAD commit tagged with" ++ tag
-objectiveDescription (TagOnGH tag)  = "Tag " ++ tag ++ " on GitHub"
+objectiveDescription :: Objective -> Text
+objectiveDescription (LocalTag tag) = "HEAD commit tagged with" <> tag
+objectiveDescription (TagOnGH tag)  = "Tag " <> tag <> " on GitHub"
 objectiveDescription ReleaseOnGH    = "TODO"

@@ -12,6 +12,7 @@ import Data.ByteString.Lazy qualified as BS
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
 import Data.Set qualified as S
+import Data.Text
 import Data.YAML (decode1, prettyPosWithSource)
 import Options.Applicative
 import Prettyprinter
@@ -19,9 +20,9 @@ import Prettyprinter.Render.Text
 
 main :: IO ()
 main = do
-  fff <- getRemoteRefs "sdlkfjdlkfjoiwefjlkdsfoiwhfwklfjowijdlksdhslkhdwo"
+  fff <- getRemoteRef "sdlkfjdlkfjoiwefjlkdsfoiwhfwklfjowijdlksdhslkhdwo"
   putStrLn $ show fff
-  releaseId <- execParser opts
+  releaseId <- fmap pack $ execParser opts
   raw <- BS.readFile "release.yaml"
   case decode1 @ReleaseConfig raw of
     Left (loc,emsg) -> putStrLn ("release.yaml:" ++ prettyPosWithSource loc raw " error" ++ emsg)

@@ -28,18 +28,14 @@ objectiveCheck (LocalTag tag) = do
         True  -> Achived
         False -> NotAchievable
 objectiveCheck (TagOnGH tag) = do
-  fetched <- gitFetch
-  case fetched of
-    False -> pure NotAchievable
-    True -> do
-      mCommit <- getCommitOfTag tag
-      case mCommit of
-        Nothing -> pure $ Achievable $ PushTagToOrigin tag
-        Just tagCommit -> do
-          matchesHead <- checkGitCommitMatchesHead tagCommit
-          pure $ case matchesHead of
-            True  -> Achived
-            False -> NotAchievable
+  mRemoteCommit <- getRemoteRef tag
+  case mRemoteCommit of
+    Nothing -> pure $ Achievable $ PushTagToOrigin tag
+    Just commitOfTag -> do
+      matchesHead <- checkGitCommitMatchesHead commitOfTag
+      pure $ case matchesHead of
+        True  -> Achived
+        False -> NotAchievable
 objectiveCheck ReleaseOnGH = pure NotAchievable
 
 changePreConditions :: Change -> S.Set Objective

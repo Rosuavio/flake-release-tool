@@ -1,55 +1,59 @@
 module Sys where
 
-import Data.Binary.Get
-import Data.Map qualified as M
-import Data.Map.NonEmpty qualified as NeM
 import System.Process.Typed
 
-import Data.ByteString qualified as SBS
-import Data.ByteString.Lazy qualified as LBS
+import Data.Attoparsec.Text as P
+import Data.Text (Text)
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as LT
+import Data.Text.Lazy.Encoding qualified as LT
 
-type GitTag = String
+type GitTag = Text
 
-type GitRef = String
-
-getCommitOfTag :: String -> IO (Maybe LBS.ByteString)
+getCommitOfTag :: GitTag -> IO (Maybe Text)
 getCommitOfTag tag = do
-  (code, output) <- readProcessStdout $ shell $ "git rev-list -n1 -i " ++ tag ++ " --"
+  (code, output) <- readProcessStdout . shell . T.unpack
+    $ "git rev-list -n1 -i " <> tag <> " --"
   pure $ case code of
-    ExitSuccess -> Just output
+    ExitSuccess -> Just . LT.toStrict $ LT.decodeUtf8 output
     _           -> Nothing
 
-
-getCommitOfHead :: IO (Maybe LBS.ByteString)
+getCommitOfHead :: IO (Maybe Text)
 getCommitOfHead = do
-  (code, output) <- readProcessStdout $ "git rev-parse HEAD"
+  (code, output) <- readProcessStdout . shell $ "git rev-parse HEAD"
   pure $ case code of
-    ExitSuccess -> Just output
+    ExitSuccess -> Just . LT.toStrict $ LT.decodeUtf8 output
     _           -> Nothing
 
 gitFetch :: IO (Bool)
 gitFetch = do
-  (code, _) <- readProcessStdout $ "git fetch"
+  (code, _) <- readProcessStdout . shell $ "git fetch"
   pure $ case code of
     ExitSuccess -> True
     _           -> False
 
-getRemoteRef :: String -> IO (Maybe SBS.ByteString)
+-- TODO: Deal with anotated tags
+getRemoteRef :: GitTag -> IO (Maybe Text)
 getRemoteRef tag = do
-  (code, output) <- readProcessStdout $ shell $ "git ls-remote origin " ++ targetRef
-  pure $ case code of
-    ExitSuccess ->
-      let
-        (commit, ref) = runGet aaa output
-      in if targetRef == ref
+  (code, output) <- readProcessStdout . shell . T.unpack $
+    "git ls-remote origin " <> targetRef
+  -- TODO: Catch decoding errors
+  case (code, parseOnly getLsRemoteOutput . LT.toStrict $ LT.decodeUtf8 output) of
+    (ExitSuccess, Right ((commit, ref):[])) -> do
+      putStrLn $ show commit
+      putStrLn $ show ref
+      pure $ if targetRef == ref
         then Just commit
         else Nothing
-    _           -> Nothing
+    (ExitSuccess, Left s) -> do
+      putStrLn $ show s
+      return Nothing
+    _           -> pure $ Nothing
   where
-    targetRef :: SBS.ByteString
-    targetRef = "refs/tags/" ++ tag
-    aaa = do
-      foo <- getByteString 40
-      tt <- getByteString 1
-      fdf <- getLazyByteStringNul
-      return $ (foo, SBS.toStrict fdf)
+    targetRef = "refs/tags/" <> tag
+    getLsRemoteOutput = sepBy1' getLsRemoteLine endOfLine
+    getLsRemoteLine = do
+      a <- P.takeWhile1 ('\t' /= )
+      _ <- char '\t'
+      b <- P.takeWhile1 (not . isEndOfLine)
+      return $ (a, b)
