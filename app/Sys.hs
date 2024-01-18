@@ -3,13 +3,19 @@
 
 module Sys where
 
+import Config (FlakeOutputPath (..))
+
 import System.Process.Typed
 
 import Data.Attoparsec.Text as P
+import Data.Bifunctor
+import Data.List as L
+import Data.Map as M
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
+import Data.Traversable
 import Prettyprinter
 
 newtype GitTag = GitTag Text
@@ -73,8 +79,32 @@ gitHubReleaseExsistsForTag (GitTag name) = do
     ExitSuccess -> True
     _           -> False
 
-createReleaseOnGH :: GitTag -> IO (ExitCode, Text)
-createReleaseOnGH (GitTag name) = do
+createReleaseOnGH :: GitTag -> Map Text FlakeOutputPath -> IO (ExitCode, Text)
+createReleaseOnGH (GitTag name) assets = do
+  (lefts, rights) <- fmap (mapEither id) . for assets $ \(FlakeOutputPath flakeOutput mPath) -> do
+    mDerivationPath <- getFlakePath flakeOutput
+    pure $ case (mDerivationPath, mPath) of
+      (Right derivationPath, Just path) -> Right $ derivationPath <> "/" <> path
+      (Right derivationPath, _)         -> Right derivationPath
+      (Left e, _)                       -> Left e
+  case M.null lefts of
+    False -> pure $ (ExitFailure 1, "TODO")
+    True -> do
+      let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
+      (code, stdout, _stderr) <- readProcess . shell . T.unpack
+        $ "gh release create " <> name <> " " <> T.intercalate " " files
+      pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
+
+buildFlakeOuput :: Text -> IO (ExitCode, Text)
+buildFlakeOuput flakeOutput = do
   (code, stdout, _stderr) <- readProcess . shell . T.unpack
-    $ "gh release create " <> name
+    $ "nix build .#" <> flakeOutput
   pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
+
+getFlakePath :: Text -> IO (Either Text Text)
+getFlakePath flakeRef = do
+  (code, stdout, _stderr) <- readProcess . shell . T.unpack
+    $ "nix path-info .#" <> flakeRef
+  pure $ case code of
+    ExitSuccess -> first T.pack . parseOnly (P.takeWhile1 (not . isEndOfLine)) . LT.toStrict $ LT.decodeUtf8 stdout
+    _           -> Left $ LT.toStrict $ LT.decodeUtf8 _stderr

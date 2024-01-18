@@ -5,4 +5,8 @@ git:
     always-publish: True
 github:
   release:
-    always-publish: True
+    always-publish: False
+    assets:
+      flake-release-tool:
+        output: flake-release-tool
+        path: bin/flake-release-tool

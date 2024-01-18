@@ -15,6 +15,7 @@ import Control.Lens
 data Indicator
   = AlwaysPushTag
   | AlwaysCreateGithuRelease
+  | AssetsToPublish
   deriving (Enum, Bounded, Eq, Ord, Show)
 
 getUserObjectives :: Text -> ReleaseConfig -> M.Map Objective (Set.Set Indicator)
@@ -30,7 +31,11 @@ indicatorCheckConfig AlwaysPushTag releaseId c =
     else Nothing
 indicatorCheckConfig AlwaysCreateGithuRelease releaseId c =
   if c ^. gitHub . release . alwaysPublish
-    then Just $ ReleaseOnGH (GitTag releaseId)
+    then Just $ ReleaseOnGH (GitTag releaseId) (c ^. gitHub . release . assets)
+    else Nothing
+indicatorCheckConfig AssetsToPublish releaseId c =
+  if not $ M.null (c ^. gitHub . release . assets)
+    then Just $ ReleaseOnGH (GitTag releaseId) (c ^. gitHub . release . assets)
     else Nothing
 
 prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> String

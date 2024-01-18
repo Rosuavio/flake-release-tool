@@ -4,9 +4,11 @@ module ObjCheck where
 
 import Change
 import Checks
+import Config (_flakeOutputPathFlakeOuput)
 import Obj
 import Sys
 
+import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
 import Data.Set qualified as S
 import Data.Set.NonEmpty qualified as NeS
@@ -36,16 +38,22 @@ objectiveCheck (TagOnGH tag) = do
       pure $ case matchesHead of
         True  -> Achived
         False -> NotAchievable
-objectiveCheck (ReleaseOnGH tag) = do
+objectiveCheck (ReleaseOnGH tag assets) = do
   rez <- gitHubReleaseExsistsForTag tag
   pure $ case rez of
+    -- TODO: Check if GitHub release matches the objective, if so determin that
+    -- the Objective is Achived
     True  -> NotAchievable
-    False -> Achievable $ CreateReleaseOnGH tag
+    False -> Achievable $ CreateReleaseOnGH tag assets
+objectiveCheck (FlakeOutputBuilt flakeOutput) =
+  pure $ Achievable $ BuildFlakeOuput flakeOutput
 
 changePreConditions :: Change -> S.Set Objective
-changePreConditions (CreateLocalTag _)      = S.empty
-changePreConditions (PushTagToOrigin tag)   = S.singleton $ LocalTag tag
-changePreConditions (CreateReleaseOnGH tag) = S.singleton $ TagOnGH tag
+changePreConditions (CreateLocalTag _)             = S.empty
+changePreConditions (PushTagToOrigin tag)          = S.singleton $ LocalTag tag
+changePreConditions (CreateReleaseOnGH tag assets) = S.fromList $
+  TagOnGH tag : (map (FlakeOutputBuilt .  _flakeOutputPathFlakeOuput) $ M.elems assets)
+changePreConditions (BuildFlakeOuput _)            = S.empty
 
 evalAllObjectives
   :: NeS.NESet Objective

@@ -3,25 +3,31 @@ module Change where
 
 import Action
 import Checks
+import Config (FlakeOutputPath)
 import Sys
 
+import Data.Map
+import Data.Text
 import System.Process.Typed
 
 data Change
   = CreateLocalTag GitTag
   | PushTagToOrigin GitTag
-  | CreateReleaseOnGH GitTag
+  | CreateReleaseOnGH GitTag (Map Text FlakeOutputPath)
+  | BuildFlakeOuput Text
   deriving (Eq, Ord, Show)
 
 changeActions :: Change -> [Action]
-changeActions (CreateLocalTag tag)    = [ tagHeadWith tag ]
-changeActions (PushTagToOrigin tag)   = [ pushGitTag tag ]
-changeActions (CreateReleaseOnGH tag) = [ createReleaseOnGH tag ]
+changeActions (CreateLocalTag tag)           = [ tagHeadWith tag ]
+changeActions (PushTagToOrigin tag)          = [ pushGitTag tag ]
+changeActions (CreateReleaseOnGH tag assets) = [ createReleaseOnGH tag assets ]
+changeActions (BuildFlakeOuput flakeOutput)  = [ buildFlakeOuput flakeOutput ]
 
 changeChecks :: Change -> [ Check ]
-changeChecks (CreateLocalTag tag)    = [ checkGitTagIsOfHead tag ]
-changeChecks (PushTagToOrigin tag)   = [ checkRemoteTagMatchedLocal tag ]
-changeChecks (CreateReleaseOnGH tag) = [ gitHubReleaseExsistsForTag tag ]
+changeChecks (CreateLocalTag tag)      = [ checkGitTagIsOfHead tag ]
+changeChecks (PushTagToOrigin tag)     = [ checkRemoteTagMatchedLocal tag ]
+changeChecks (CreateReleaseOnGH tag _) = [ gitHubReleaseExsistsForTag tag ]
+changeChecks (BuildFlakeOuput _)       = []
 
 preformChange :: Change -> IO (Bool)
 preformChange change = go (changeActions change)
