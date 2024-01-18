@@ -36,11 +36,16 @@ objectiveCheck (TagOnGH tag) = do
       pure $ case matchesHead of
         True  -> Achived
         False -> NotAchievable
-objectiveCheck ReleaseOnGH = pure NotAchievable
+objectiveCheck (ReleaseOnGH tag) = do
+  rez <- gitHubReleaseExsistsForTag tag
+  pure $ case rez of
+    True  -> NotAchievable
+    False -> Achievable $ CreateReleaseOnGH tag
 
 changePreConditions :: Change -> S.Set Objective
-changePreConditions (CreateLocalTag _)    = S.empty
-changePreConditions (PushTagToOrigin tag) = S.singleton $ LocalTag tag
+changePreConditions (CreateLocalTag _)      = S.empty
+changePreConditions (PushTagToOrigin tag)   = S.singleton $ LocalTag tag
+changePreConditions (CreateReleaseOnGH tag) = S.singleton $ TagOnGH tag
 
 evalAllObjectives
   :: NeS.NESet Objective

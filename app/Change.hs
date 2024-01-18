@@ -10,15 +10,18 @@ import System.Process.Typed
 data Change
   = CreateLocalTag GitTag
   | PushTagToOrigin GitTag
+  | CreateReleaseOnGH GitTag
   deriving (Eq, Ord, Show)
 
 changeActions :: Change -> [Action]
-changeActions (CreateLocalTag tag)  = [ tagHeadWith tag ]
-changeActions (PushTagToOrigin tag) = [ pushGitTag tag ]
+changeActions (CreateLocalTag tag)    = [ tagHeadWith tag ]
+changeActions (PushTagToOrigin tag)   = [ pushGitTag tag ]
+changeActions (CreateReleaseOnGH tag) = [ createReleaseOnGH tag ]
 
 changeChecks :: Change -> [ Check ]
-changeChecks (CreateLocalTag tag)  = [ checkGitTagIsOfHead tag ]
-changeChecks (PushTagToOrigin tag) = [ checkRemoteTagMatchedLocal tag ]
+changeChecks (CreateLocalTag tag)    = [ checkGitTagIsOfHead tag ]
+changeChecks (PushTagToOrigin tag)   = [ checkRemoteTagMatchedLocal tag ]
+changeChecks (CreateReleaseOnGH tag) = [ gitHubReleaseExsistsForTag tag ]
 
 preformChange :: Change -> IO (Bool)
 preformChange change = go (changeActions change)

@@ -71,3 +71,17 @@ pushGitTag (GitTag name) = do
   (code, stdout, _stderr) <- readProcess . shell . T.unpack
     $ "git push origin refs/tags/" <> name
   pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
+
+gitHubReleaseExsistsForTag :: GitTag -> IO Bool
+gitHubReleaseExsistsForTag (GitTag name) = do
+  (code, _stdout, _stderr) <- readProcess . shell . T.unpack
+    $ "gh release view " <> name
+  pure $ case code of
+    ExitSuccess -> True
+    _           -> False
+
+createReleaseOnGH :: GitTag -> IO (ExitCode, Text)
+createReleaseOnGH (GitTag name) = do
+  (code, stdout, _stderr) <- readProcess . shell . T.unpack
+    $ "gh release create " <> name
+  pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
