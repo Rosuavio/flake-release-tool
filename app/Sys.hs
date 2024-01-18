@@ -22,16 +22,16 @@ getCommitOfTag :: GitTag -> IO (Maybe CommitId)
 getCommitOfTag (GitTag tag) = do
   (code, stdout, _stderr) <- readProcess . shell . T.unpack
     $ "git rev-list -n1 -i " <> tag <> " --"
-  pure $ case code of
-    ExitSuccess -> Just . CommitId . LT.toStrict $ LT.decodeUtf8 stdout
-    _           -> Nothing
+  pure $ case (code, parseOnly (P.takeWhile1 (not . isEndOfLine)) . LT.toStrict $ LT.decodeUtf8 stdout) of
+    (ExitSuccess, Right commit) -> Just $ CommitId commit
+    _                           -> Nothing
 
 getCommitOfHead :: IO (Maybe CommitId)
 getCommitOfHead = do
   (code, stdout, _stderr) <- readProcess . shell $ "git rev-parse HEAD"
-  pure $ case code of
-    ExitSuccess -> Just . CommitId . LT.toStrict $ LT.decodeUtf8 stdout
-    _           -> Nothing
+  pure $ case (code, parseOnly (P.takeWhile1 (not . isEndOfLine)) . LT.toStrict $ LT.decodeUtf8 stdout) of
+    (ExitSuccess, Right commit) -> Just $ CommitId commit
+    _                           -> Nothing
 
 gitFetch :: IO (Bool)
 gitFetch = do
