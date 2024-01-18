@@ -31,11 +31,17 @@ indicatorCheckConfig AlwaysPushTag releaseId c =
     else Nothing
 indicatorCheckConfig AlwaysCreateGithuRelease releaseId c =
   if c ^. gitHub . release . alwaysPublish
-    then Just $ ReleaseOnGH (GitTag releaseId) (c ^. gitHub . release . assets)
+    then Just $ ReleaseOnGH
+      (GitTag releaseId)
+      (c ^. description . text)
+      (c ^. gitHub . release . assets)
     else Nothing
 indicatorCheckConfig AssetsToPublish releaseId c =
   if not $ M.null (c ^. gitHub . release . assets)
-    then Just $ ReleaseOnGH (GitTag releaseId) (c ^. gitHub . release . assets)
+    then Just $ ReleaseOnGH
+      (GitTag releaseId)
+      (c ^. description . text)
+      (c ^. gitHub . release . assets)
     else Nothing
 
 prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> String

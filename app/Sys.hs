@@ -79,8 +79,12 @@ gitHubReleaseExsistsForTag (GitTag name) = do
     ExitSuccess -> True
     _           -> False
 
-createReleaseOnGH :: GitTag -> Map Text FlakeOutputPath -> IO (ExitCode, Text)
-createReleaseOnGH (GitTag name) assets = do
+createReleaseOnGH
+  :: GitTag
+  -> Text
+  -> Map Text FlakeOutputPath
+  -> IO (ExitCode, Text)
+createReleaseOnGH (GitTag name) description assets = do
   (lefts, rights) <- fmap (mapEither id) . for assets $ \(FlakeOutputPath flakeOutput mPath) -> do
     mDerivationPath <- getFlakePath flakeOutput
     pure $ case (mDerivationPath, mPath) of
@@ -92,7 +96,9 @@ createReleaseOnGH (GitTag name) assets = do
     True -> do
       let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
       (code, stdout, _stderr) <- readProcess . shell . T.unpack
-        $ "gh release create " <> name <> " " <> T.intercalate " " files
+        $ "gh release create " <> name
+        <> " --notes \"" <> description <> "\" "
+        <> T.intercalate " " files
       pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
 
 buildFlakeOuput :: Text -> IO (ExitCode, Text)

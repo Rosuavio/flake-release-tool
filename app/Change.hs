@@ -13,21 +13,21 @@ import System.Process.Typed
 data Change
   = CreateLocalTag GitTag
   | PushTagToOrigin GitTag
-  | CreateReleaseOnGH GitTag (Map Text FlakeOutputPath)
+  | CreateReleaseOnGH GitTag Text (Map Text FlakeOutputPath)
   | BuildFlakeOuput Text
   deriving (Eq, Ord, Show)
 
 changeActions :: Change -> [Action]
 changeActions (CreateLocalTag tag)           = [ tagHeadWith tag ]
 changeActions (PushTagToOrigin tag)          = [ pushGitTag tag ]
-changeActions (CreateReleaseOnGH tag assets) = [ createReleaseOnGH tag assets ]
+changeActions (CreateReleaseOnGH tag description assets) = [ createReleaseOnGH tag description assets ]
 changeActions (BuildFlakeOuput flakeOutput)  = [ buildFlakeOuput flakeOutput ]
 
 changeChecks :: Change -> [ Check ]
-changeChecks (CreateLocalTag tag)      = [ checkGitTagIsOfHead tag ]
-changeChecks (PushTagToOrigin tag)     = [ checkRemoteTagMatchedLocal tag ]
-changeChecks (CreateReleaseOnGH tag _) = [ gitHubReleaseExsistsForTag tag ]
-changeChecks (BuildFlakeOuput _)       = []
+changeChecks (CreateLocalTag tag)        = [ checkGitTagIsOfHead tag ]
+changeChecks (PushTagToOrigin tag)       = [ checkRemoteTagMatchedLocal tag ]
+changeChecks (CreateReleaseOnGH tag _ _) = [ gitHubReleaseExsistsForTag tag ]
+changeChecks (BuildFlakeOuput _)         = []
 
 preformChange :: Change -> IO (Bool)
 preformChange change = go (changeActions change)

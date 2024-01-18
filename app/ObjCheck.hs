@@ -38,20 +38,20 @@ objectiveCheck (TagOnGH tag) = do
       pure $ case matchesHead of
         True  -> Achived
         False -> NotAchievable
-objectiveCheck (ReleaseOnGH tag assets) = do
+objectiveCheck (ReleaseOnGH tag description assets) = do
   rez <- gitHubReleaseExsistsForTag tag
   pure $ case rez of
     -- TODO: Check if GitHub release matches the objective, if so determin that
     -- the Objective is Achived
     True  -> NotAchievable
-    False -> Achievable $ CreateReleaseOnGH tag assets
+    False -> Achievable $ CreateReleaseOnGH tag description assets
 objectiveCheck (FlakeOutputBuilt flakeOutput) =
   pure $ Achievable $ BuildFlakeOuput flakeOutput
 
 changePreConditions :: Change -> S.Set Objective
 changePreConditions (CreateLocalTag _)             = S.empty
 changePreConditions (PushTagToOrigin tag)          = S.singleton $ LocalTag tag
-changePreConditions (CreateReleaseOnGH tag assets) = S.fromList $
+changePreConditions (CreateReleaseOnGH tag _ assets) = S.fromList $
   TagOnGH tag : (map (FlakeOutputBuilt .  _flakeOutputPathFlakeOuput) $ M.elems assets)
 changePreConditions (BuildFlakeOuput _)            = S.empty
 

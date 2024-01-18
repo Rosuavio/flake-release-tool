@@ -12,14 +12,15 @@ import GHC.Generics
 
 import Data.Default
 import Data.Map as M
-import Data.Text
+import Data.Text as T
 import Data.YAML
 
 import Control.Lens.TH
 
 data ReleaseConfig = ReleaseConfig
-  { _releaseConfigGit    :: !ReleaseConfigGit
-  , _releaseConfigGitHub :: !ReleaseConfigGitHub
+  { _releaseConfigGit         :: !ReleaseConfigGit
+  , _releaseConfigGitHub      :: !ReleaseConfigGitHub
+  , _releaseConfigDescription :: !ReleaseConfigDescription
   }
   deriving stock Generic
   deriving anyclass Default
@@ -28,6 +29,7 @@ instance FromYAML ReleaseConfig where
   parseYAML = withMap "ReleaseConfig" $ \m -> ReleaseConfig
     <$> m .:! "git" .!= def
     <*> m .:! "github" .!= def
+    <*> m .:! "description" .!= def
 
 data ReleaseConfigGit = ReleaseConfigGit
   { _releaseConfigGitTag :: !ReleaseConfigGitTag
@@ -90,9 +92,21 @@ instance FromYAML FlakeOutputPath where
     <$> m .: "output"
     <*> m .:! "path" .!= Nothing
 
+data ReleaseConfigDescription = ReleaseConfigDescription
+  { _releaseConfigDescriptionText :: !Text
+  }
+
+instance Default ReleaseConfigDescription where
+  def = ReleaseConfigDescription T.empty
+
+instance FromYAML ReleaseConfigDescription where
+  parseYAML = withMap "ReleaseConfigDescription" $ \m -> ReleaseConfigDescription
+    <$> m .:! "text" .!= (_releaseConfigDescriptionText $ def @ReleaseConfigDescription)
+
 makeFields ''ReleaseConfig
 makeFields ''ReleaseConfigGit
 makeFields ''ReleaseConfigGitTag
 makeFields ''ReleaseConfigGitHub
 makeFields ''ReleaseConfigGitHubRelease
 makeFields ''FlakeOutputPath
+makeFields ''ReleaseConfigDescription
