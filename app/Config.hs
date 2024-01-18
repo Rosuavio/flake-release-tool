@@ -93,15 +93,17 @@ instance FromYAML FlakeOutputPath where
     <*> m .:! "path" .!= Nothing
 
 data ReleaseConfigDescription = ReleaseConfigDescription
-  { _releaseConfigDescriptionText :: !Text
+  { _releaseConfigDescriptionText                               :: !Text
+  , _releaseConfigDescriptionIncludeGithubGeneratedReleaseNotes :: !Bool
   }
 
 instance Default ReleaseConfigDescription where
-  def = ReleaseConfigDescription T.empty
+  def = ReleaseConfigDescription T.empty False
 
 instance FromYAML ReleaseConfigDescription where
   parseYAML = withMap "ReleaseConfigDescription" $ \m -> ReleaseConfigDescription
     <$> m .:! "text" .!= (_releaseConfigDescriptionText $ def @ReleaseConfigDescription)
+    <*> m .:! "include-github-generated-release-notes" .!= (_releaseConfigDescriptionIncludeGithubGeneratedReleaseNotes $ def @ReleaseConfigDescription)
 
 makeFields ''ReleaseConfig
 makeFields ''ReleaseConfigGit

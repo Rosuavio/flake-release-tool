@@ -82,9 +82,10 @@ gitHubReleaseExsistsForTag (GitTag name) = do
 createReleaseOnGH
   :: GitTag
   -> Text
+  -> Bool
   -> Map Text FlakeOutputPath
   -> IO (ExitCode, Text)
-createReleaseOnGH (GitTag name) description assets = do
+createReleaseOnGH (GitTag name) description includeGithubGeneratedReleaseNotes assets = do
   (lefts, rights) <- fmap (mapEither id) . for assets $ \(FlakeOutputPath flakeOutput mPath) -> do
     mDerivationPath <- getFlakePath flakeOutput
     pure $ case (mDerivationPath, mPath) of
@@ -98,6 +99,8 @@ createReleaseOnGH (GitTag name) description assets = do
       (code, stdout, _stderr) <- readProcess . shell . T.unpack
         $ "gh release create " <> name
         <> " --notes \"" <> description <> "\" "
+        <> " --generate-notes="
+        <> if includeGithubGeneratedReleaseNotes then "True" else "False"
         <> T.intercalate " " files
       pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
 
