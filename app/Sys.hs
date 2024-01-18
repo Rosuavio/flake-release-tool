@@ -33,13 +33,6 @@ getCommitOfHead = do
     (ExitSuccess, Right commit) -> Just $ CommitId commit
     _                           -> Nothing
 
-gitFetch :: IO (Bool)
-gitFetch = do
-  (code, _) <- readProcessStdout . shell $ "git fetch"
-  pure $ case code of
-    ExitSuccess -> True
-    _           -> False
-
 -- TODO: Deal with anotated tags
 getCommitForRemoteTag :: GitTag -> IO (Maybe CommitId)
 getCommitForRemoteTag (GitTag tag) = do
