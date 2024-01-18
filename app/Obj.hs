@@ -4,7 +4,7 @@ module Obj where
 
 import Sys
 
-import Data.Text
+import Prettyprinter
 
 data Objective
   = LocalTag GitTag
@@ -13,7 +13,7 @@ data Objective
   deriving (Eq, Ord, Show)
 
 
-objectiveDescription :: Objective -> Text
-objectiveDescription (LocalTag tag) = "HEAD commit tagged with" <> tag
-objectiveDescription (TagOnGH tag)  = "Tag " <> tag <> " on GitHub"
+objectiveDescription :: Objective -> Doc ann
+objectiveDescription (LocalTag tag) = "HEAD commit tagged with" <> pretty tag
+objectiveDescription (TagOnGH tag)  = "Tag " <> pretty tag <> " on GitHub"
 objectiveDescription ReleaseOnGH    = "TODO"

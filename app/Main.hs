@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
+import Change
 import Config (ReleaseConfig)
 import Indicator
 import Obj
@@ -9,6 +10,7 @@ import ObjGraph
 import Sys
 
 import Data.ByteString.Lazy qualified as BS
+import Data.Foldable
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
 import Data.Set qualified as S
@@ -20,16 +22,13 @@ import Prettyprinter.Render.Text
 
 main :: IO ()
 main = do
-  fff <- getRemoteRef "sdlkfjdlkfjoiwefjlkdsfoiwhfwklfjowijdlksdhslkhdwo"
-  putStrLn $ show fff
   releaseId <- fmap pack $ execParser opts
   raw <- BS.readFile "release.yaml"
   case decode1 @ReleaseConfig raw of
     Left (loc,emsg) -> putStrLn ("release.yaml:" ++ prettyPosWithSource loc raw " error" ++ emsg)
     Right c -> do
       let
-        userObjectives :: M.Map Objective (S.Set Indicator)
-          = getUserObjectives releaseId c
+        userObjectives = getUserObjectives releaseId c
       case NeM.nonEmptyMap userObjectives of
         Nothing -> putStrLn "No user objectives"
         Just nonEmptyUserObjectives -> do
@@ -54,8 +53,11 @@ main = do
 
           putDoc $ prettyReleasePlan releasePlan
 
-          -- preformReleasePlan releasePlan
-          pure ()
+          rez <- preformReleasePlan releasePlan
+
+          case rez of
+            True  -> putStrLn "Release plan completed successfuly"
+            False -> putStrLn "Release plan failed"
   where
     opts = info (args <**> helper)
       ( fullDesc
@@ -67,4 +69,3 @@ args :: Parser String
 args = strArgument
   ( metavar "RELEASE_ID"
   <> help "The Release Identifier" )
-

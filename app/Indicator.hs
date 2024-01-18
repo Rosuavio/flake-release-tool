@@ -2,6 +2,7 @@ module Indicator where
 
 import Config qualified as F
 import Obj
+import Sys
 
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
@@ -24,7 +25,7 @@ getUserObjectives releaseId config = M.fromListWith Set.union
 indicatorCheckConfig :: Indicator -> Text -> F.ReleaseConfig -> Maybe Objective
 indicatorCheckConfig AlwaysPushTag releaseId c =
   if c ^. F.git . F.tag . F.alwaysPublish
-    then Just $ TagOnGH releaseId
+    then Just $ TagOnGH (GitTag releaseId)
     else Nothing
 
 prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> String

@@ -28,11 +28,11 @@ objectiveCheck (LocalTag tag) = do
         True  -> Achived
         False -> NotAchievable
 objectiveCheck (TagOnGH tag) = do
-  mRemoteCommit <- getRemoteRef tag
+  mRemoteCommit <- getCommitForRemoteTag tag
   case mRemoteCommit of
     Nothing -> pure $ Achievable $ PushTagToOrigin tag
-    Just commitOfTag -> do
-      matchesHead <- checkGitCommitMatchesHead commitOfTag
+    Just remoteCommit -> do
+      matchesHead <- checkGitCommitMatchesHead remoteCommit
       pure $ case matchesHead of
         True  -> Achived
         False -> NotAchievable

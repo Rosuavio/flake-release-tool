@@ -1,3 +1,6 @@
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Sys where
 
 import System.Process.Typed
@@ -7,22 +10,27 @@ import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
+import Prettyprinter
 
-type GitTag = Text
+newtype GitTag = GitTag Text
+  deriving newtype (Eq, Ord, Show, Pretty)
+newtype CommitId = CommitId Text
+  deriving newtype Eq
+newtype RefId = RefId Text
 
-getCommitOfTag :: GitTag -> IO (Maybe Text)
-getCommitOfTag tag = do
-  (code, output) <- readProcessStdout . shell . T.unpack
+getCommitOfTag :: GitTag -> IO (Maybe CommitId)
+getCommitOfTag (GitTag tag) = do
+  (code, stdout, stderr) <- readProcess . shell . T.unpack
     $ "git rev-list -n1 -i " <> tag <> " --"
   pure $ case code of
-    ExitSuccess -> Just . LT.toStrict $ LT.decodeUtf8 output
+    ExitSuccess -> Just . CommitId . LT.toStrict $ LT.decodeUtf8 stdout
     _           -> Nothing
 
-getCommitOfHead :: IO (Maybe Text)
+getCommitOfHead :: IO (Maybe CommitId)
 getCommitOfHead = do
-  (code, output) <- readProcessStdout . shell $ "git rev-parse HEAD"
+  (code, stdout, stderr) <- readProcess . shell $ "git rev-parse HEAD"
   pure $ case code of
-    ExitSuccess -> Just . LT.toStrict $ LT.decodeUtf8 output
+    ExitSuccess -> Just . CommitId . LT.toStrict $ LT.decodeUtf8 stdout
     _           -> Nothing
 
 gitFetch :: IO (Bool)
@@ -33,22 +41,17 @@ gitFetch = do
     _           -> False
 
 -- TODO: Deal with anotated tags
-getRemoteRef :: GitTag -> IO (Maybe Text)
-getRemoteRef tag = do
-  (code, output) <- readProcessStdout . shell . T.unpack $
+getCommitForRemoteTag :: GitTag -> IO (Maybe CommitId)
+getCommitForRemoteTag (GitTag tag) = do
+  (code, stdout, stderr) <- readProcess . shell . T.unpack $
     "git ls-remote origin " <> targetRef
   -- TODO: Catch decoding errors
-  case (code, parseOnly getLsRemoteOutput . LT.toStrict $ LT.decodeUtf8 output) of
-    (ExitSuccess, Right ((commit, ref):[])) -> do
-      putStrLn $ show commit
-      putStrLn $ show ref
-      pure $ if targetRef == ref
-        then Just commit
+  pure $ case (code, parseOnly getLsRemoteOutput . LT.toStrict $ LT.decodeUtf8 stdout) of
+    (ExitSuccess, Right ((commit, ref):[])) ->
+      if targetRef == ref
+        then Just $ CommitId commit
         else Nothing
-    (ExitSuccess, Left s) -> do
-      putStrLn $ show s
-      return Nothing
-    _           -> pure $ Nothing
+    _           -> Nothing
   where
     targetRef = "refs/tags/" <> tag
     getLsRemoteOutput = sepBy1' getLsRemoteLine endOfLine
@@ -57,3 +60,14 @@ getRemoteRef tag = do
       _ <- char '\t'
       b <- P.takeWhile1 (not . isEndOfLine)
       return $ (a, b)
+
+tagHeadWith :: GitTag -> IO (ExitCode, Text)
+tagHeadWith (GitTag name) = do
+  (code, stdout, stderr) <- readProcess . shell . T.unpack $ "git tag " <> name
+  pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
+
+pushGitTag :: GitTag -> IO (ExitCode, Text)
+pushGitTag (GitTag name) = do
+  (code, stdout, stderr) <- readProcess . shell . T.unpack
+    $ "git push origin refs/tags/" <> name
+  pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)

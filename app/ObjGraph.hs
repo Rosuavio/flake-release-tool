@@ -81,3 +81,11 @@ graphKeyToMaybeChange rgk = case rgk of
 
 prettyReleasePlan :: [ Change ] -> Doc x
 prettyReleasePlan = viaShow
+
+preformReleasePlan :: [Change] -> IO (Bool)
+preformReleasePlan [] = pure True
+preformReleasePlan (next:rest) = do
+  rez <- preformChange next
+  case rez of
+    True  -> preformReleasePlan rest
+    False -> pure False

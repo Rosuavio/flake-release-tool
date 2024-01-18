@@ -9,7 +9,3 @@ import Data.Text.Lazy.Encoding qualified as LT
 
 type Action = IO (ExitCode, Text)
 
-tagHeadWith :: GitTag -> IO (ExitCode, Text)
-tagHeadWith tagName = do
-  (code, output) <- readProcessStdout . shell . unpack $ "git tag -a " <> tagName
-  pure $ (code, LT.toStrict $ LT.decodeUtf8 output)
