@@ -15,7 +15,7 @@ data ObjectiveCheckResult
   = Achived
   | Achievable Change
   | NotAchievable
-  deriving Show
+  deriving (Show, Eq)
 
 objectiveCheck :: Objective -> IO ObjectiveCheckResult
 objectiveCheck (LocalTag tag) = do

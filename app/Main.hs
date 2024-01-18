@@ -41,18 +41,26 @@ main = do
           let
             g@(graph, nodeFromVertex, _vertexFromKey) = graphFromObjectives allObjectives
             releasePlan = getReleasePlan (graph, nodeFromVertex)
+            canPreformRelease = and . fmap ((/=) NotAchievable) $ NeM.elems allObjectives
 
           putDoc $ prettyObjectiveGraph g
 
           putStrLn ""
 
-          putDoc $ prettyReleasePlan releasePlan
+          case canPreformRelease of
+            False -> do
+              putStrLn "There are release objectives not achievable by the release tool"
+              putStrLn "Cannot preform release."
+            True -> do
+              putDoc $ prettyReleasePlan releasePlan
 
-          rez <- preformReleasePlan releasePlan
+              putStrLn ""
 
-          case rez of
-            True  -> putStrLn "Release plan completed successfuly"
-            False -> putStrLn "Release plan failed"
+              rez <- preformReleasePlan releasePlan
+
+              case rez of
+                True  -> putStrLn "Release plan completed successfuly"
+                False -> putStrLn "Release plan failed"
   where
     opts = info (args <**> helper)
       ( fullDesc
