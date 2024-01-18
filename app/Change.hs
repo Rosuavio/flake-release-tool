@@ -5,8 +5,6 @@ import Action
 import Checks
 import Sys
 
-import Data.Foldable
-import Data.Traversable
 import System.Process.Typed
 
 data Change
@@ -28,7 +26,7 @@ preformChange change = go (changeActions change)
     go :: [Action] -> IO Bool
     go [] = return True
     go (next:rest) = do
-      (exitCode, output) <- next
+      (exitCode, _output) <- next
       case exitCode of
         ExitSuccess -> go rest
         _           -> pure False

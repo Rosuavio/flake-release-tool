@@ -1,19 +1,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import Change
 import Config (ReleaseConfig)
 import Indicator
 import Obj
 import ObjCheck
 import ObjGraph
-import Sys
 
 import Data.ByteString.Lazy qualified as BS
-import Data.Foldable
-import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
-import Data.Set qualified as S
 import Data.Text
 import Data.YAML (decode1, prettyPosWithSource)
 import Options.Applicative
@@ -44,7 +39,7 @@ main = do
           putStrLn ""
 
           let
-            g@(graph, nodeFromVertex, vertexFromKey) = graphFromObjectives allObjectives
+            g@(graph, nodeFromVertex, _vertexFromKey) = graphFromObjectives allObjectives
             releasePlan = getReleasePlan (graph, nodeFromVertex)
 
           putDoc $ prettyObjectiveGraph g

@@ -12,7 +12,6 @@ import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
 import Data.Maybe
 import Data.Set qualified as S
-import Data.Set.NonEmpty qualified as NeS
 import Data.Tuple.Extra
 import Prettyprinter
 
@@ -59,7 +58,7 @@ prettyObjectiveGraph
      , ReleaseGraphKey -> Maybe G.Vertex
      )
   -> Doc x
-prettyObjectiveGraph (graph, nodeFromVertex, vertexFromKey) =
+prettyObjectiveGraph (graph, _nodeFromVertex, _vertexFromKey) =
   let
     aaaaa = G.dff graph
   in

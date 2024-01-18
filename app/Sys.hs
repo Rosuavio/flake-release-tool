@@ -20,7 +20,7 @@ newtype RefId = RefId Text
 
 getCommitOfTag :: GitTag -> IO (Maybe CommitId)
 getCommitOfTag (GitTag tag) = do
-  (code, stdout, stderr) <- readProcess . shell . T.unpack
+  (code, stdout, _stderr) <- readProcess . shell . T.unpack
     $ "git rev-list -n1 -i " <> tag <> " --"
   pure $ case code of
     ExitSuccess -> Just . CommitId . LT.toStrict $ LT.decodeUtf8 stdout
@@ -28,7 +28,7 @@ getCommitOfTag (GitTag tag) = do
 
 getCommitOfHead :: IO (Maybe CommitId)
 getCommitOfHead = do
-  (code, stdout, stderr) <- readProcess . shell $ "git rev-parse HEAD"
+  (code, stdout, _stderr) <- readProcess . shell $ "git rev-parse HEAD"
   pure $ case code of
     ExitSuccess -> Just . CommitId . LT.toStrict $ LT.decodeUtf8 stdout
     _           -> Nothing
@@ -43,7 +43,7 @@ gitFetch = do
 -- TODO: Deal with anotated tags
 getCommitForRemoteTag :: GitTag -> IO (Maybe CommitId)
 getCommitForRemoteTag (GitTag tag) = do
-  (code, stdout, stderr) <- readProcess . shell . T.unpack $
+  (code, stdout, _stderr) <- readProcess . shell . T.unpack $
     "git ls-remote origin " <> targetRef
   -- TODO: Catch decoding errors
   pure $ case (code, parseOnly getLsRemoteOutput . LT.toStrict $ LT.decodeUtf8 stdout) of
@@ -63,11 +63,11 @@ getCommitForRemoteTag (GitTag tag) = do
 
 tagHeadWith :: GitTag -> IO (ExitCode, Text)
 tagHeadWith (GitTag name) = do
-  (code, stdout, stderr) <- readProcess . shell . T.unpack $ "git tag " <> name
+  (code, stdout, _stderr) <- readProcess . shell . T.unpack $ "git tag " <> name
   pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
 
 pushGitTag :: GitTag -> IO (ExitCode, Text)
 pushGitTag (GitTag name) = do
-  (code, stdout, stderr) <- readProcess . shell . T.unpack
+  (code, stdout, _stderr) <- readProcess . shell . T.unpack
     $ "git push origin refs/tags/" <> name
   pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)

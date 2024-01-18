@@ -25,7 +25,7 @@ common lang
     OverloadedStrings
     TypeApplications
 
-  ghc-options:        -Wall
+  ghc-options:        -Wall -Werror
 
 library
   import:         lang
