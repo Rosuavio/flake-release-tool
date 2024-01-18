@@ -98,6 +98,7 @@ createReleaseOnGH (GitTag name) description includeGithubGeneratedReleaseNotes a
       let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
       (code, stdout, _stderr) <- readProcess . shell . T.unpack
         $ "gh release create " <> name
+        <> " --title " <> name
         <> " --verify-tag"
         <> " --notes \"" <> description <> "\" "
         <> " --generate-notes="
