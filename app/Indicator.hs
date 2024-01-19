@@ -9,6 +9,7 @@ import Data.Map.NonEmpty qualified as NeM
 import Data.Maybe
 import Data.Set qualified as Set
 import Data.Text
+import Prettyprinter
 
 import Control.Lens
 
@@ -38,9 +39,8 @@ indicatorCheckConfig AssetsToPublish releaseId c =
     then Just $ mkReleaseOnGH releaseId c
     else Nothing
 
-prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> String
-prettyUserObjectives = flip NeM.foldlWithKey [] $ \curr key val ->
-  curr ++ "(" ++ (show key) ++ ":" ++ show val ++ ")"
+prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> Doc ann
+prettyUserObjectives = viaShow
 
 mkReleaseOnGH :: Text -> ReleaseConfig -> Objective
 mkReleaseOnGH releaseId c = ReleaseOnGH $ ObjectiveReleaseOnGH

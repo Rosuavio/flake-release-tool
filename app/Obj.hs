@@ -10,7 +10,6 @@ import Sys
 import Config (FlakeOutputPath)
 import Data.Map
 import Data.Text
-import Prettyprinter
 
 import Control.Lens.TH
 
@@ -29,12 +28,5 @@ data ObjectiveReleaseOnGH = ObjectiveReleaseOnGH
   , _objectiveReleaseOnGHAssets                             :: (Map Text FlakeOutputPath)
   }
   deriving (Eq, Ord, Show)
-
-objectiveDescription :: Objective -> Doc ann
-objectiveDescription (LocalTag tag)       = "HEAD commit tagged with" <> pretty tag
-objectiveDescription (TagOnGH tag)        = "Tag " <> pretty tag <> " on GitHub"
-objectiveDescription (ReleaseOnGH _)      = "TODO"
-objectiveDescription (FlakeOutputBuilt _) = "TODO"
-
 
 makeFields ''ObjectiveReleaseOnGH

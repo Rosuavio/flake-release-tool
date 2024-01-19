@@ -57,12 +57,9 @@ prettyObjectiveGraph
      , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
      , ReleaseGraphKey -> Maybe G.Vertex
      )
-  -> Doc x
+  -> Doc ann
 prettyObjectiveGraph (graph, _nodeFromVertex, _vertexFromKey) =
-  let
-    aaaaa = G.dff graph
-  in
-    viaShow aaaaa
+  viaShow $ G.dff graph
 
 getReleasePlan
   :: ( G.Graph
@@ -78,7 +75,7 @@ graphKeyToMaybeChange rgk = case rgk of
   KeyChange c -> Just c
   _           -> Nothing
 
-prettyReleasePlan :: [ Change ] -> Doc x
+prettyReleasePlan :: [ Change ] -> Doc ann
 prettyReleasePlan = viaShow
 
 preformReleasePlan :: [Change] -> IO (Bool)

@@ -28,7 +28,10 @@ main = do
         Nothing -> putStrLn "No user objectives"
         Just nonEmptyUserObjectives -> do
           putStrLn "Detected user objectives..."
-          putStrLn $ prettyUserObjectives nonEmptyUserObjectives
+
+          putDoc $ prettyUserObjectives nonEmptyUserObjectives
+
+          putStrLn ""
 
           allObjectives :: NeM.NEMap Objective ObjectiveCheckResult
             <- evalAllObjectives $ NeM.keysSet nonEmptyUserObjectives

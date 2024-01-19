@@ -16,10 +16,9 @@ import Data.Text qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
 import Data.Traversable
-import Prettyprinter
 
 newtype GitTag = GitTag Text
-  deriving newtype (Eq, Ord, Show, Pretty)
+  deriving newtype (Eq, Ord, Show)
 newtype CommitId = CommitId Text
   deriving newtype Eq
 newtype RefId = RefId Text
