@@ -85,26 +85,31 @@ createReleaseOnGH
   -> Bool
   -> Map Text FlakeOutputPath
   -> IO (ExitCode, Text)
-createReleaseOnGH (GitTag name) description includeGithubGeneratedReleaseNotes assets = do
-  (lefts, rights) <- fmap (mapEither id) . for assets $ \(FlakeOutputPath flakeOutput mPath) -> do
-    mDerivationPath <- getFlakePath flakeOutput
-    pure $ case (mDerivationPath, mPath) of
-      (Right derivationPath, Just path) -> Right $ derivationPath <> "/" <> path
-      (Right derivationPath, _)         -> Right derivationPath
-      (Left e, _)                       -> Left e
-  case M.null lefts of
-    False -> pure $ (ExitFailure 1, "TODO")
-    True -> do
-      let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
-      (code, stdout, _stderr) <- readProcess . shell . T.unpack
-        $ "gh release create " <> name
-        <> " --title " <> name
-        <> " --verify-tag"
-        <> " --notes \"" <> description <> "\" "
-        <> " --generate-notes="
-        <> if includeGithubGeneratedReleaseNotes then "True" else "False"
-        <> T.intercalate " " files
-      pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
+createReleaseOnGH
+  (GitTag name)
+  description
+  includeGithubGeneratedReleaseNotes
+  assets
+  = do
+    (lefts, rights) <- fmap (mapEither id) . for assets $ \(FlakeOutputPath flakeOutput mPath) -> do
+      mDerivationPath <- getFlakePath flakeOutput
+      pure $ case (mDerivationPath, mPath) of
+        (Right derivationPath, Just path) -> Right $ derivationPath <> "/" <> path
+        (Right derivationPath, _)         -> Right derivationPath
+        (Left e, _)                       -> Left e
+    case M.null lefts of
+      False -> pure $ (ExitFailure 1, "TODO")
+      True -> do
+        let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
+        (code, stdout, _stderr) <- readProcess . shell . T.unpack
+          $ "gh release create " <> name
+          <> " --title " <> name
+          <> " --verify-tag"
+          <> " --notes \"" <> description <> "\" "
+          <> " --generate-notes="
+          <> if includeGithubGeneratedReleaseNotes then "True" else "False"
+          <> T.intercalate " " files
+        pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
 
 buildFlakeOuput :: Text -> IO (ExitCode, Text)
 buildFlakeOuput flakeOutput = do
