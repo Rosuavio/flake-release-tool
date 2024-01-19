@@ -2,16 +2,18 @@
 
 module ObjCheck where
 
-import Change
+import Change as C
 import Checks
 import Config (_flakeOutputPathFlakeOuput)
-import Obj
+import Obj as O
 import Sys
 
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
 import Data.Set qualified as S
 import Data.Set.NonEmpty qualified as NeS
+
+import Control.Lens
 
 data ObjectiveCheckResult
   = Achived
@@ -20,40 +22,48 @@ data ObjectiveCheckResult
   deriving (Show, Eq)
 
 objectiveCheck :: Objective -> IO ObjectiveCheckResult
-objectiveCheck (LocalTag tag) = do
-  mCommit <- getCommitOfTag tag
+objectiveCheck (LocalTag tagName) = do
+  mCommit <- getCommitOfTag tagName
   case mCommit of
-    Nothing -> pure $ Achievable $ CreateLocalTag tag
+    Nothing -> pure $ Achievable $ CreateLocalTag tagName
     Just tagCommit -> do
       matchesHead <- checkGitCommitMatchesHead tagCommit
       pure $ case matchesHead of
         True  -> Achived
         False -> NotAchievable
-objectiveCheck (TagOnGH tag) = do
-  mRemoteCommit <- getCommitForRemoteTag tag
+objectiveCheck (TagOnGH tagName) = do
+  mRemoteCommit <- getCommitForRemoteTag tagName
   case mRemoteCommit of
-    Nothing -> pure $ Achievable $ PushTagToOrigin tag
+    Nothing -> pure $ Achievable $ PushTagToOrigin tagName
     Just remoteCommit -> do
       matchesHead <- checkGitCommitMatchesHead remoteCommit
       pure $ case matchesHead of
         True  -> Achived
         False -> NotAchievable
-objectiveCheck (ReleaseOnGH (ObjectiveReleaseOnGH tag description includeGithubGeneratedReleaseNotes assets)) = do
-  rez <- gitHubReleaseExsistsForTag tag
+objectiveCheck (ReleaseOnGH obj) = do
+  rez <- gitHubReleaseExsistsForTag $ (obj ^. O.tag)
   pure $ case rez of
     -- TODO: Check if GitHub release matches the objective, if so determin that
     -- the Objective is Achived
     True  -> NotAchievable
-    False -> Achievable . CreateReleaseOnGH $ ChangeCreateReleaseOnGH tag description includeGithubGeneratedReleaseNotes assets
+    False -> Achievable . CreateReleaseOnGH $ ChangeCreateReleaseOnGH
+      { _changeCreateReleaseOnGHTag = obj ^. O.tag
+      , _changeCreateReleaseOnGHDescription = obj ^. O.description
+      , _changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes = obj ^. O.includeGithubGeneratedReleaseNotes
+      , _changeCreateReleaseOnGHAssets = obj ^. O.assets
+      }
 objectiveCheck (FlakeOutputBuilt flakeOutput) =
   pure $ Achievable $ BuildFlakeOuput flakeOutput
 
 changePreConditions :: Change -> S.Set Objective
 changePreConditions (CreateLocalTag _)             = S.empty
-changePreConditions (PushTagToOrigin tag)          = S.singleton $ LocalTag tag
-changePreConditions (CreateReleaseOnGH (ChangeCreateReleaseOnGH tag _ _ assets))
-  = S.fromList $ TagOnGH tag
-  : (map (FlakeOutputBuilt .  _flakeOutputPathFlakeOuput) $ M.elems assets)
+changePreConditions (PushTagToOrigin tagName)      = S.singleton $ LocalTag tagName
+changePreConditions (CreateReleaseOnGH obj)
+  = S.fromList $ TagOnGH (obj ^. C.tag)
+  : (map
+      (FlakeOutputBuilt .  _flakeOutputPathFlakeOuput)
+      (M.elems $ obj ^. C.assets)
+    )
 changePreConditions (BuildFlakeOuput _)            = S.empty
 
 evalAllObjectives

@@ -1,4 +1,7 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE TemplateHaskell        #-}
+
 module Change where
 
 import Action
@@ -9,6 +12,8 @@ import Sys
 import Data.Map
 import Data.Text
 import System.Process.Typed
+
+import Control.Lens.TH
 
 data Change
   = CreateLocalTag GitTag
@@ -28,15 +33,20 @@ data ChangeCreateReleaseOnGH = ChangeCreateReleaseOnGH
 changeActions :: Change -> [Action]
 changeActions (CreateLocalTag tag)           = [ tagHeadWith tag ]
 changeActions (PushTagToOrigin tag)          = [ pushGitTag tag ]
-changeActions (CreateReleaseOnGH (ChangeCreateReleaseOnGH tag description includeGithubGeneratedReleaseNotes assets))
-  = [ createReleaseOnGH tag description includeGithubGeneratedReleaseNotes assets ]
+changeActions (CreateReleaseOnGH c)          =
+  [ createReleaseOnGH
+      (_changeCreateReleaseOnGHTag c)
+      (_changeCreateReleaseOnGHDescription c)
+      (_changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes c)
+      (_changeCreateReleaseOnGHAssets c)
+  ]
 changeActions (BuildFlakeOuput flakeOutput)  = [ buildFlakeOuput flakeOutput ]
 
 changeChecks :: Change -> [ Check ]
-changeChecks (CreateLocalTag tag)        = [ checkGitTagIsOfHead tag ]
-changeChecks (PushTagToOrigin tag)       = [ checkRemoteTagMatchedLocal tag ]
-changeChecks (CreateReleaseOnGH (ChangeCreateReleaseOnGH tag _ _ _)) = [ gitHubReleaseExsistsForTag tag ]
-changeChecks (BuildFlakeOuput _)         = []
+changeChecks (CreateLocalTag tag)  = [ checkGitTagIsOfHead tag ]
+changeChecks (PushTagToOrigin tag) = [ checkRemoteTagMatchedLocal tag ]
+changeChecks (CreateReleaseOnGH c) = [ gitHubReleaseExsistsForTag (_changeCreateReleaseOnGHTag c)]
+changeChecks (BuildFlakeOuput _)   = []
 
 preformChange :: Change -> IO (Bool)
 preformChange change = go (changeActions change)
@@ -48,3 +58,5 @@ preformChange change = go (changeActions change)
       case exitCode of
         ExitSuccess -> go rest
         _           -> pure False
+
+makeFields ''ChangeCreateReleaseOnGH

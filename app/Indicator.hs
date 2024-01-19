@@ -1,7 +1,7 @@
 module Indicator where
 
 import Config
-import Obj
+import Obj (Objective (..), ObjectiveReleaseOnGH (..))
 import Sys
 
 import Data.Map qualified as M
@@ -31,22 +31,21 @@ indicatorCheckConfig AlwaysPushTag releaseId c =
     else Nothing
 indicatorCheckConfig AlwaysCreateGithuRelease releaseId c =
   if c ^. gitHub . release . alwaysPublish
-    then Just . ReleaseOnGH $ ObjectiveReleaseOnGH
-      (GitTag releaseId)
-      (c ^. description . text)
-      (c ^. description . includeGithubGeneratedReleaseNotes)
-      (c ^. gitHub . release . assets)
+    then Just $ mkReleaseOnGH releaseId c
     else Nothing
 indicatorCheckConfig AssetsToPublish releaseId c =
   if not $ M.null (c ^. gitHub . release . assets)
-    then Just . ReleaseOnGH $ ObjectiveReleaseOnGH
-      (GitTag releaseId)
-      (c ^. description . text)
-      (c ^. description . includeGithubGeneratedReleaseNotes)
-      (c ^. gitHub . release . assets)
+    then Just $ mkReleaseOnGH releaseId c
     else Nothing
 
 prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> String
 prettyUserObjectives = flip NeM.foldlWithKey [] $ \curr key val ->
   curr ++ "(" ++ (show key) ++ ":" ++ show val ++ ")"
 
+mkReleaseOnGH :: Text -> ReleaseConfig -> Objective
+mkReleaseOnGH releaseId c = ReleaseOnGH $ ObjectiveReleaseOnGH
+  { _objectiveReleaseOnGHTag = GitTag releaseId
+  , _objectiveReleaseOnGHDescription = c ^. description . text
+  , _objectiveReleaseOnGHIncludeGithubGeneratedReleaseNotes = c ^. description . includeGithubGeneratedReleaseNotes
+  , _objectiveReleaseOnGHAssets = c ^. gitHub . release . assets
+  }
