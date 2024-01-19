@@ -105,9 +105,9 @@ createReleaseOnGH
         let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
         (code, stdout, _stderr) <- readProcess . shell . T.unpack
           $ "gh release create " <> name
-          <> " --title " <> titlePrefix <> name
+          <> " --title \"" <> titlePrefix <> name <> "\""
           <> " --verify-tag"
-          <> " --notes \"" <> description <> "\" "
+          <> " --notes \"" <> description <> "\""
           <> " --generate-notes="
           <> if includeGithubGeneratedReleaseNotes then "True" else "False"
           <> T.intercalate " " files
