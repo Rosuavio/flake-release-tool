@@ -45,6 +45,7 @@ executable flake-release-tool
     ObjCheck
     ObjGraph
     Sys
+    Util
 
   build-depends:
     , attoparsec

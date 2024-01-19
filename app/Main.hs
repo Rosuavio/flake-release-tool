@@ -6,6 +6,7 @@ import Indicator
 import Obj (Objective)
 import ObjCheck
 import ObjGraph
+import Util
 
 import Data.ByteString.Lazy qualified as BS
 import Data.Map.NonEmpty qualified as NeM
@@ -17,7 +18,7 @@ import Prettyprinter.Render.Text
 
 main :: IO ()
 main = do
-  releaseId <- fmap pack $ execParser opts
+  releaseId <- execParser opts
   raw <- BS.readFile "release.yaml"
   case decode1 @ReleaseConfig raw of
     Left (loc,emsg) -> putStrLn ("release.yaml:" ++ prettyPosWithSource loc raw " error" ++ emsg)
@@ -71,7 +72,7 @@ main = do
       <> header "flake-release-tool - create software releases"
       )
 
-args :: Parser String
-args = strArgument
+args :: Parser ReleaseId
+args = fmap (ReleaseId . pack) $ strArgument
   ( metavar "RELEASE_ID"
   <> help "The Release Identifier" )

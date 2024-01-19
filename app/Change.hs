@@ -8,6 +8,7 @@ import Action
 import Checks
 import Config (FlakeOutputPath)
 import Sys
+import Util
 
 import Data.Map
 import Data.Text
@@ -23,7 +24,7 @@ data Change
   deriving (Eq, Ord, Show)
 
 data ChangeCreateReleaseOnGH = ChangeCreateReleaseOnGH
-  { _changeCreateReleaseOnGHReleaseId                          :: Text
+  { _changeCreateReleaseOnGHReleaseId                          :: ReleaseId
   , _changeCreateReleaseOnGHTagPrefix                          :: Text
   , _changeCreateReleaseOnGHTitlePrefix                        :: Text
   , _changeCreateReleaseOnGHDescription                        :: Text

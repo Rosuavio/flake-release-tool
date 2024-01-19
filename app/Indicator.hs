@@ -3,12 +3,12 @@ module Indicator where
 import Config
 import Obj (Objective (..), ObjectiveReleaseOnGH (..))
 import Sys
+import Util
 
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
 import Data.Maybe
 import Data.Set qualified as Set
-import Data.Text
 import Prettyprinter
 
 import Control.Lens
@@ -19,13 +19,13 @@ data Indicator
   | AssetsToPublish
   deriving (Enum, Bounded, Eq, Ord, Show)
 
-getUserObjectives :: Text -> ReleaseConfig -> M.Map Objective (Set.Set Indicator)
+getUserObjectives :: ReleaseId -> ReleaseConfig -> M.Map Objective (Set.Set Indicator)
 getUserObjectives releaseId config = M.fromListWith Set.union
   $ mapMaybe
       (\i -> fmap (\obj -> (obj, Set.singleton i)) $ indicatorCheckConfig i releaseId config)
       [minBound..maxBound]
 
-indicatorCheckConfig :: Indicator -> Text -> ReleaseConfig -> Maybe Objective
+indicatorCheckConfig :: Indicator -> ReleaseId -> ReleaseConfig -> Maybe Objective
 indicatorCheckConfig AlwaysPushTag releaseId c =
   if c ^. git . tag . alwaysPublish
     then Just . TagOnGH $ GitTag releaseId (c ^. git . tag . prefix)
@@ -42,7 +42,7 @@ indicatorCheckConfig AssetsToPublish releaseId c =
 prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> Doc ann
 prettyUserObjectives = viaShow
 
-mkReleaseOnGH :: Text -> ReleaseConfig -> Objective
+mkReleaseOnGH :: ReleaseId -> ReleaseConfig -> Objective
 mkReleaseOnGH releaseId c = ReleaseOnGH $ ObjectiveReleaseOnGH
   { _objectiveReleaseOnGHReleaseId = releaseId
   , _objectiveReleaseOnGHTagPrefix = c ^. git . tag . prefix

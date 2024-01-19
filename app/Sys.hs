@@ -4,6 +4,7 @@
 module Sys where
 
 import Config (FlakeOutputPath (..))
+import Util
 
 import System.Process.Typed
 
@@ -18,13 +19,13 @@ import Data.Text.Lazy.Encoding qualified as LT
 import Data.Traversable
 
 data GitTag = GitTag
-  { _gitTagReleaseId :: Text
+  { _gitTagReleaseId :: ReleaseId
   , _gitTagPrefix    :: Text
   }
   deriving (Eq, Ord, Show)
 
 renderGitTag :: GitTag -> Text
-renderGitTag tag = (_gitTagPrefix tag) <> (_gitTagReleaseId tag)
+renderGitTag tag = (_gitTagPrefix tag) <> (renderReleaseId $ _gitTagReleaseId tag)
 
 newtype CommitId = CommitId Text
   deriving newtype Eq
@@ -77,7 +78,7 @@ pushGitTag tag = do
     $ "git push origin refs/tags/" <> renderGitTag tag
   pure $ (code, LT.toStrict $ LT.decodeUtf8 stdout)
 
-gitHubReleaseExsistsForTag ::GitTag -> IO Bool
+gitHubReleaseExsistsForTag :: GitTag -> IO Bool
 gitHubReleaseExsistsForTag tag = do
   (code, _stdout, _stderr) <- readProcess . shell . T.unpack
     $ "gh release view " <> renderGitTag tag
@@ -86,7 +87,7 @@ gitHubReleaseExsistsForTag tag = do
     _           -> False
 
 createReleaseOnGH
-  :: Text
+  :: ReleaseId
   -> Text
   -> Text
   -> Text
@@ -113,7 +114,7 @@ createReleaseOnGH
         let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
         (code, stdout, _stderr) <- readProcess . shell . T.unpack
           $ "gh release create " <> (renderGitTag $ GitTag releaseId tagPrefix)
-          <> " --title \"" <> titlePrefix <> releaseId <> "\""
+          <> " --title \"" <> titlePrefix <> renderReleaseId releaseId <> "\""
           <> " --verify-tag"
           <> " --notes \"" <> description <> "\""
           <> " --generate-notes="

@@ -5,9 +5,10 @@
 
 module Obj where
 
-import Sys
-
 import Config (FlakeOutputPath)
+import Sys
+import Util
+
 import Data.Map
 import Data.Text
 
@@ -21,7 +22,7 @@ data Objective
   deriving (Eq, Ord, Show)
 
 data ObjectiveReleaseOnGH = ObjectiveReleaseOnGH
-  { _objectiveReleaseOnGHReleaseId                          :: Text
+  { _objectiveReleaseOnGHReleaseId                          :: ReleaseId
   , _objectiveReleaseOnGHTagPrefix                          :: Text
   , _objectiveReleaseOnGHTitlePrefix                        :: Text
   , _objectiveReleaseOnGHDescription                        :: Text
