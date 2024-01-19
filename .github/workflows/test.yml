@@ -1,0 +1,19 @@
+name: "Release"
+on: workflow_dispatch
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v21
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config:
+            experimental-features = nix-command flakes
+
+      - name: Foo
+        run: |
+          nix develop --command release-tool -c $GITHUB_REF
