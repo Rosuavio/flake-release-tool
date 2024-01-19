@@ -21,6 +21,7 @@ data ReleaseConfig = ReleaseConfig
   { _releaseConfigGit         :: !ReleaseConfigGit
   , _releaseConfigGitHub      :: !ReleaseConfigGitHub
   , _releaseConfigDescription :: !ReleaseConfigDescription
+  , _releaseConfigTitle       :: !ReleaseConfigTitle
   }
   deriving stock Generic
   deriving anyclass Default
@@ -30,6 +31,7 @@ instance FromYAML ReleaseConfig where
     <$> m .:! "git" .!= def
     <*> m .:! "github" .!= def
     <*> m .:! "description" .!= def
+    <*> m .:! "title" .!= def
 
 data ReleaseConfigGit = ReleaseConfigGit
   { _releaseConfigGitTag :: !ReleaseConfigGitTag
@@ -105,6 +107,17 @@ instance FromYAML ReleaseConfigDescription where
     <$> m .:! "text" .!= (_releaseConfigDescriptionText $ def @ReleaseConfigDescription)
     <*> m .:! "include-github-generated-release-notes" .!= (_releaseConfigDescriptionIncludeGithubGeneratedReleaseNotes $ def @ReleaseConfigDescription)
 
+data ReleaseConfigTitle = ReleaseConfigTitle
+  { _releaseConfigTitlePrefix :: !Text
+  }
+
+instance Default ReleaseConfigTitle where
+  def = ReleaseConfigTitle T.empty
+
+instance FromYAML ReleaseConfigTitle where
+  parseYAML = withMap "ReleaseConfigTitle" $ \m -> ReleaseConfigTitle
+    <$> m .:! "prefix" .!= (_releaseConfigTitlePrefix $ def @ReleaseConfigTitle)
+
 makeFields ''ReleaseConfig
 makeFields ''ReleaseConfigGit
 makeFields ''ReleaseConfigGitTag
@@ -112,3 +125,4 @@ makeFields ''ReleaseConfigGitHub
 makeFields ''ReleaseConfigGitHubRelease
 makeFields ''FlakeOutputPath
 makeFields ''ReleaseConfigDescription
+makeFields ''ReleaseConfigTitle

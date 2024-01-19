@@ -23,6 +23,7 @@ data Objective
 
 data ObjectiveReleaseOnGH = ObjectiveReleaseOnGH
   { _objectiveReleaseOnGHTag                                :: GitTag
+  , _objectiveReleaseOnGHTitlePrefix                        :: Text
   , _objectiveReleaseOnGHDescription                        :: Text
   , _objectiveReleaseOnGHIncludeGithubGeneratedReleaseNotes :: Bool
   , _objectiveReleaseOnGHAssets                             :: (Map Text FlakeOutputPath)

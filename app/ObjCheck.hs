@@ -48,6 +48,7 @@ objectiveCheck (ReleaseOnGH obj) = do
     True  -> NotAchievable
     False -> Achievable . CreateReleaseOnGH $ ChangeCreateReleaseOnGH
       { _changeCreateReleaseOnGHTag = obj ^. O.tag
+      , _changeCreateReleaseOnGHTitlePrefix = obj ^. O.titlePrefix
       , _changeCreateReleaseOnGHDescription = obj ^. O.description
       , _changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes = obj ^. O.includeGithubGeneratedReleaseNotes
       , _changeCreateReleaseOnGHAssets = obj ^. O.assets

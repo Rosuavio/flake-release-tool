@@ -82,11 +82,13 @@ gitHubReleaseExsistsForTag (GitTag name) = do
 createReleaseOnGH
   :: GitTag
   -> Text
+  -> Text
   -> Bool
   -> Map Text FlakeOutputPath
   -> IO (ExitCode, Text)
 createReleaseOnGH
   (GitTag name)
+  titlePrefix
   description
   includeGithubGeneratedReleaseNotes
   assets
@@ -103,7 +105,7 @@ createReleaseOnGH
         let files = L.map (\(fileName, filePath) -> "'" <> filePath <> "#" <> fileName <> "'") $ toAscList rights
         (code, stdout, _stderr) <- readProcess . shell . T.unpack
           $ "gh release create " <> name
-          <> " --title " <> name
+          <> " --title " <> titlePrefix <> name
           <> " --verify-tag"
           <> " --notes \"" <> description <> "\" "
           <> " --generate-notes="

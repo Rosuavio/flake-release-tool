@@ -24,6 +24,7 @@ data Change
 
 data ChangeCreateReleaseOnGH = ChangeCreateReleaseOnGH
   { _changeCreateReleaseOnGHTag                                :: GitTag
+  , _changeCreateReleaseOnGHTitlePrefix                        :: Text
   , _changeCreateReleaseOnGHDescription                        :: Text
   , _changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes :: Bool
   , _changeCreateReleaseOnGHAssets                             :: Map Text FlakeOutputPath
@@ -36,6 +37,7 @@ changeActions (PushTagToOrigin tag)          = [ pushGitTag tag ]
 changeActions (CreateReleaseOnGH c)          =
   [ createReleaseOnGH
       (_changeCreateReleaseOnGHTag c)
+      (_changeCreateReleaseOnGHTitlePrefix c)
       (_changeCreateReleaseOnGHDescription c)
       (_changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes c)
       (_changeCreateReleaseOnGHAssets c)

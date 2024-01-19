@@ -45,6 +45,7 @@ prettyUserObjectives = flip NeM.foldlWithKey [] $ \curr key val ->
 mkReleaseOnGH :: Text -> ReleaseConfig -> Objective
 mkReleaseOnGH releaseId c = ReleaseOnGH $ ObjectiveReleaseOnGH
   { _objectiveReleaseOnGHTag = GitTag releaseId
+  , _objectiveReleaseOnGHTitlePrefix = c ^. title . prefix
   , _objectiveReleaseOnGHDescription = c ^. description . text
   , _objectiveReleaseOnGHIncludeGithubGeneratedReleaseNotes = c ^. description . includeGithubGeneratedReleaseNotes
   , _objectiveReleaseOnGHAssets = c ^. gitHub . release . assets

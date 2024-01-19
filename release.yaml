@@ -1,3 +1,5 @@
+title:
+  prefix: Flake Release Tool
 description:
   text: Early Release meant for testing purposes.
   include-github-generated-release-notes: true
