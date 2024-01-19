@@ -3,7 +3,7 @@ module Main where
 
 import Config (ReleaseConfig)
 import Indicator
-import Obj
+import Obj (Objective)
 import ObjCheck
 import ObjGraph
 

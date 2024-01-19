@@ -28,7 +28,7 @@ getUserObjectives releaseId config = M.fromListWith Set.union
 indicatorCheckConfig :: Indicator -> Text -> ReleaseConfig -> Maybe Objective
 indicatorCheckConfig AlwaysPushTag releaseId c =
   if c ^. git . tag . alwaysPublish
-    then Just $ TagOnGH (GitTag releaseId)
+    then Just . TagOnGH $ GitTag releaseId (c ^. git . tag . prefix)
     else Nothing
 indicatorCheckConfig AlwaysCreateGithuRelease releaseId c =
   if c ^. gitHub . release . alwaysPublish
@@ -44,7 +44,8 @@ prettyUserObjectives = viaShow
 
 mkReleaseOnGH :: Text -> ReleaseConfig -> Objective
 mkReleaseOnGH releaseId c = ReleaseOnGH $ ObjectiveReleaseOnGH
-  { _objectiveReleaseOnGHTag = GitTag releaseId
+  { _objectiveReleaseOnGHReleaseId = releaseId
+  , _objectiveReleaseOnGHTagPrefix = c ^. git . tag . prefix
   , _objectiveReleaseOnGHTitlePrefix = c ^. title . prefix
   , _objectiveReleaseOnGHDescription = c ^. description . text
   , _objectiveReleaseOnGHIncludeGithubGeneratedReleaseNotes = c ^. description . includeGithubGeneratedReleaseNotes

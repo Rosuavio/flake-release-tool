@@ -6,6 +6,7 @@ description:
 git:
   tag:
     always-publish: True
+    prefix: v
 github:
   release:
     always-publish: False

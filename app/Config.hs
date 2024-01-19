@@ -45,15 +45,18 @@ instance FromYAML ReleaseConfigGit where
 
 data ReleaseConfigGitTag = ReleaseConfigGitTag
   { _releaseConfigGitTagAlwaysPublish :: !Bool
+  , _releaseConfigGitTagPrefix        :: !Text
   }
 
 instance FromYAML ReleaseConfigGitTag where
   parseYAML = withMap "Tag" $ \m -> ReleaseConfigGitTag
     <$> m .:! "always-publish" .!= (_releaseConfigGitTagAlwaysPublish $ def @ReleaseConfigGitTag)
+    <*> m .:! "prefix" .!= (_releaseConfigGitTagPrefix $ def @ReleaseConfigGitTag)
 
 instance Default ReleaseConfigGitTag where
   def = ReleaseConfigGitTag
     { _releaseConfigGitTagAlwaysPublish = False
+    , _releaseConfigGitTagPrefix = T.empty
     }
 
 data ReleaseConfigGitHub = ReleaseConfigGitHub

@@ -23,7 +23,8 @@ data Change
   deriving (Eq, Ord, Show)
 
 data ChangeCreateReleaseOnGH = ChangeCreateReleaseOnGH
-  { _changeCreateReleaseOnGHTag                                :: GitTag
+  { _changeCreateReleaseOnGHReleaseId                          :: Text
+  , _changeCreateReleaseOnGHTagPrefix                          :: Text
   , _changeCreateReleaseOnGHTitlePrefix                        :: Text
   , _changeCreateReleaseOnGHDescription                        :: Text
   , _changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes :: Bool
@@ -36,7 +37,8 @@ changeActions (CreateLocalTag tag)           = [ tagHeadWith tag ]
 changeActions (PushTagToOrigin tag)          = [ pushGitTag tag ]
 changeActions (CreateReleaseOnGH c)          =
   [ createReleaseOnGH
-      (_changeCreateReleaseOnGHTag c)
+      (_changeCreateReleaseOnGHReleaseId c)
+      (_changeCreateReleaseOnGHTagPrefix c)
       (_changeCreateReleaseOnGHTitlePrefix c)
       (_changeCreateReleaseOnGHDescription c)
       (_changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes c)
@@ -47,7 +49,11 @@ changeActions (BuildFlakeOuput flakeOutput)  = [ buildFlakeOuput flakeOutput ]
 changeChecks :: Change -> [ Check ]
 changeChecks (CreateLocalTag tag)  = [ checkGitTagIsOfHead tag ]
 changeChecks (PushTagToOrigin tag) = [ checkRemoteTagMatchedLocal tag ]
-changeChecks (CreateReleaseOnGH c) = [ gitHubReleaseExsistsForTag (_changeCreateReleaseOnGHTag c)]
+changeChecks (CreateReleaseOnGH c) =
+    [ gitHubReleaseExsistsForTag $ GitTag
+        (_changeCreateReleaseOnGHReleaseId c)
+        (_changeCreateReleaseOnGHTagPrefix c)
+    ]
 changeChecks (BuildFlakeOuput _)   = []
 
 preformChange :: Change -> IO (Bool)

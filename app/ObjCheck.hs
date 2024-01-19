@@ -22,10 +22,10 @@ data ObjectiveCheckResult
   deriving (Show, Eq)
 
 objectiveCheck :: Objective -> IO ObjectiveCheckResult
-objectiveCheck (LocalTag tagName) = do
-  mCommit <- getCommitOfTag tagName
+objectiveCheck (LocalTag tag) = do
+  mCommit <- getCommitOfTag tag
   case mCommit of
-    Nothing -> pure $ Achievable $ CreateLocalTag tagName
+    Nothing -> pure $ Achievable $ CreateLocalTag tag
     Just tagCommit -> do
       matchesHead <- checkGitCommitMatchesHead tagCommit
       pure $ case matchesHead of
@@ -41,13 +41,14 @@ objectiveCheck (TagOnGH tagName) = do
         True  -> Achived
         False -> NotAchievable
 objectiveCheck (ReleaseOnGH obj) = do
-  rez <- gitHubReleaseExsistsForTag $ (obj ^. O.tag)
+  rez <- gitHubReleaseExsistsForTag $ GitTag (obj ^. O.releaseId) (obj ^. O.tagPrefix)
   pure $ case rez of
     -- TODO: Check if GitHub release matches the objective, if so determin that
     -- the Objective is Achived
     True  -> NotAchievable
     False -> Achievable . CreateReleaseOnGH $ ChangeCreateReleaseOnGH
-      { _changeCreateReleaseOnGHTag = obj ^. O.tag
+      { _changeCreateReleaseOnGHReleaseId = obj ^. O.releaseId
+      , _changeCreateReleaseOnGHTagPrefix = obj ^. O.tagPrefix
       , _changeCreateReleaseOnGHTitlePrefix = obj ^. O.titlePrefix
       , _changeCreateReleaseOnGHDescription = obj ^. O.description
       , _changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes = obj ^. O.includeGithubGeneratedReleaseNotes
@@ -60,7 +61,7 @@ changePreConditions :: Change -> S.Set Objective
 changePreConditions (CreateLocalTag _)             = S.empty
 changePreConditions (PushTagToOrigin tagName)      = S.singleton $ LocalTag tagName
 changePreConditions (CreateReleaseOnGH obj)
-  = S.fromList $ TagOnGH (obj ^. C.tag)
+  = S.fromList $ (TagOnGH $ GitTag (obj ^. C.releaseId) (obj ^. C.tagPrefix))
   : (map
       (FlakeOutputBuilt .  _flakeOutputPathFlakeOuput)
       (M.elems $ obj ^. C.assets)

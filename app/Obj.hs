@@ -21,7 +21,8 @@ data Objective
   deriving (Eq, Ord, Show)
 
 data ObjectiveReleaseOnGH = ObjectiveReleaseOnGH
-  { _objectiveReleaseOnGHTag                                :: GitTag
+  { _objectiveReleaseOnGHReleaseId                          :: Text
+  , _objectiveReleaseOnGHTagPrefix                          :: Text
   , _objectiveReleaseOnGHTitlePrefix                        :: Text
   , _objectiveReleaseOnGHDescription                        :: Text
   , _objectiveReleaseOnGHIncludeGithubGeneratedReleaseNotes :: Bool
