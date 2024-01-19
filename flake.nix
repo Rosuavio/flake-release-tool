@@ -4,7 +4,7 @@
 
   inputs = {
     iogx = {
-      url = "github:input-output-hk/iogx";
+      url = "github:input-output-hk/iogx/add-release-tool";
     };
   };
 
