@@ -19,42 +19,39 @@ main = do
   raw <- BS.readFile "release.yaml"
   case decode1 @ReleaseConfig raw of
     Left (loc,emsg) -> putStrLn ("release.yaml:" ++ prettyPosWithSource loc raw " error" ++ emsg)
-    Right c -> do
-      let
-        userObjectives = getUserObjectives releaseId c
-      case NeM.nonEmptyMap userObjectives of
-        Nothing -> putStrLn "No user objectives"
-        Just nonEmptyUserObjectives -> do
-          putStrLn "Detected user objectives..."
+    Right c -> case getUserObjectives releaseId c of
+      Nothing -> putStrLn "No user objectives"
+      Just nonEmptyUserObjectives -> do
+        putStrLn "Detected user objectives..."
 
-          putDoc $ prettyUserObjectives nonEmptyUserObjectives
+        putDoc $ prettyUserObjectives nonEmptyUserObjectives
 
-          putStrLn ""
+        putStrLn ""
 
-          g@(graph, nodeFromVertex)
-            <- evalObjectiveGraph $ NeM.keysSet nonEmptyUserObjectives
+        g@(graph, nodeFromVertex)
+          <- evalObjectiveGraph $ NeM.keysSet nonEmptyUserObjectives
 
-          let
-            releasePlan = getReleasePlan (graph, nodeFromVertex)
-            canPreformRelease = canAchiveObjectives g
-          putDoc $ prettyObjectiveGraph g
+        let
+          releasePlan = getReleasePlan (graph, nodeFromVertex)
+          canPreformRelease = canAchiveObjectives g
+        putDoc $ prettyObjectiveGraph g
 
-          putStrLn ""
+        putStrLn ""
 
-          case canPreformRelease of
-            False -> do
-              putStrLn "There are release objectives not achievable by the release tool"
-              putStrLn "Cannot preform release."
-            True -> do
-              putDoc $ prettyReleasePlan releasePlan
+        case canPreformRelease of
+          False -> do
+            putStrLn "There are release objectives not achievable by the release tool"
+            putStrLn "Cannot preform release."
+          True -> do
+            putDoc $ prettyReleasePlan releasePlan
 
-              putStrLn ""
+            putStrLn ""
 
-              rez <- preformReleasePlan releasePlan
+            rez <- preformReleasePlan releasePlan
 
-              case rez of
-                True  -> putStrLn "Release plan completed successfuly"
-                False -> putStrLn "Release plan failed"
+            case rez of
+              True  -> putStrLn "Release plan completed successfuly"
+              False -> putStrLn "Release plan failed"
   where
     opts = info (args <**> helper)
       ( fullDesc

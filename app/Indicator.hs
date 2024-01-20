@@ -6,9 +6,11 @@ import Sys
 import Util
 
 import Data.Map qualified as M
+import Data.Map.NonEmpty (NEMap)
 import Data.Map.NonEmpty qualified as NeM
 import Data.Maybe
-import Data.Set qualified as Set
+import Data.Set.NonEmpty (NESet)
+import Data.Set.NonEmpty qualified as NeS
 import Prettyprinter
 
 import Control.Lens
@@ -19,11 +21,15 @@ data Indicator
   | AssetsToPublish
   deriving (Enum, Bounded, Eq, Ord, Show)
 
-getUserObjectives :: ReleaseId -> ReleaseConfig -> M.Map Objective (Set.Set Indicator)
-getUserObjectives releaseId config = M.fromListWith Set.union
+getUserObjectives
+  :: ReleaseId
+  -> ReleaseConfig
+  -> Maybe (NEMap Objective (NESet Indicator))
+getUserObjectives releaseId config = NeM.nonEmptyMap
+  . M.fromListWith NeS.union
   $ mapMaybe
-      (\i -> fmap (\obj -> (obj, Set.singleton i)) $ indicatorCheckConfig i releaseId config)
-      [minBound..maxBound]
+      (\i -> fmap (\obj -> (obj, NeS.singleton i)) $ indicatorCheckConfig i releaseId config)
+      [minBound @Indicator ..maxBound @Indicator]
 
 indicatorCheckConfig :: Indicator -> ReleaseId -> ReleaseConfig -> Maybe Objective
 indicatorCheckConfig AlwaysPushTag releaseId c =
@@ -39,7 +45,7 @@ indicatorCheckConfig AssetsToPublish releaseId c =
     then Just $ mkReleaseOnGH releaseId c
     else Nothing
 
-prettyUserObjectives :: NeM.NEMap Objective (Set.Set Indicator) -> Doc ann
+prettyUserObjectives :: NEMap Objective (NESet Indicator) -> Doc ann
 prettyUserObjectives = viaShow
 
 mkReleaseOnGH :: ReleaseId -> ReleaseConfig -> Objective
