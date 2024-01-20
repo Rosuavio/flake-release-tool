@@ -3,9 +3,7 @@ module Main where
 
 import Config (ReleaseConfig)
 import Indicator
-import Obj (Objective)
 import ObjCheck
-import ObjGraph
 import Util
 
 import Data.ByteString.Lazy qualified as BS
@@ -13,7 +11,6 @@ import Data.Map.NonEmpty qualified as NeM
 import Data.Text
 import Data.YAML (decode1, prettyPosWithSource)
 import Options.Applicative
-import Prettyprinter
 import Prettyprinter.Render.Text
 
 main :: IO ()
@@ -34,19 +31,12 @@ main = do
 
           putStrLn ""
 
-          allObjectives :: NeM.NEMap Objective ObjectiveCheckResult
-            <- evalAllObjectives $ NeM.keysSet nonEmptyUserObjectives
-
-          putStrLn "All release objectives"
-          putDoc $ viaShow allObjectives
-
-          putStrLn ""
+          g@(graph, nodeFromVertex)
+            <- evalObjectiveGraph $ NeM.keysSet nonEmptyUserObjectives
 
           let
-            g@(graph, nodeFromVertex, _vertexFromKey) = graphFromObjectives allObjectives
             releasePlan = getReleasePlan (graph, nodeFromVertex)
-            canPreformRelease = and . fmap ((/=) NotAchievable) $ NeM.elems allObjectives
-
+            canPreformRelease = canAchiveObjectives g
           putDoc $ prettyObjectiveGraph g
 
           putStrLn ""

@@ -43,7 +43,6 @@ executable flake-release-tool
     Indicator
     Obj
     ObjCheck
-    ObjGraph
     Sys
     Util
 

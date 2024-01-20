@@ -8,10 +8,15 @@ import Config (_flakeOutputPathFlakeOuput)
 import Obj as O
 import Sys
 
+import Data.Graph qualified as G
+import Data.List.NonEmpty qualified as NeL
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
+import Data.Maybe
 import Data.Set qualified as S
 import Data.Set.NonEmpty qualified as NeS
+import Data.Tuple.Extra
+import Prettyprinter
 
 import Control.Lens
 
@@ -20,6 +25,15 @@ data ObjectiveCheckResult
   | Achievable Change
   | NotAchievable
   deriving (Show, Eq)
+
+data ReleaseGraphNode
+  = NodeObjective ObjectiveCheckResult
+  | NodeChange
+
+data ReleaseGraphKey
+  = KeyObjective Objective
+  | KeyChange Change
+  deriving (Eq, Ord)
 
 objectiveCheck :: Objective -> IO ObjectiveCheckResult
 objectiveCheck (LocalTag tag) = do
@@ -67,6 +81,29 @@ changePreConditions (CreateReleaseOnGH obj)
       (M.elems $ obj ^. C.assets)
     )
 changePreConditions (BuildFlakeOuput _)            = S.empty
+
+evalObjectiveGraph
+  :: NeS.NESet Objective
+  -> IO ( G.Graph
+     , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
+     )
+evalObjectiveGraph objectives = do
+  o <- evalAllObjectives objectives
+  pure $ graphFromObjectives o
+
+canAchiveObjectives
+  :: ( G.Graph
+     , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
+     )
+  -> Bool
+canAchiveObjectives (g, nodeFromVertex) =
+  all
+    (not . isNotAchievableObj . fst3 . nodeFromVertex)
+    (G.vertices g)
+  where
+    isNotAchievableObj node = case node of
+      NodeObjective NotAchievable -> True
+      _                           -> False
 
 evalAllObjectives
   :: NeS.NESet Objective
@@ -118,3 +155,64 @@ mapMaybe' f = foldr g []
     g x rest
       | Just y <- f x = y : rest
       | otherwise     = rest
+
+graphFromObjectives
+  :: NeM.NEMap Objective ObjectiveCheckResult
+  -> ( G.Graph
+     , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
+     )
+graphFromObjectives objectives =
+  let
+    changes :: M.Map ReleaseGraphKey (ReleaseGraphNode, S.Set ReleaseGraphKey)
+    changes = M.mapKeysMonotonic KeyChange
+      . M.fromSet (\c -> (NodeChange, S.mapMonotonic KeyObjective $ changePreConditions c))
+      $ getChanges objectives
+
+    objs :: NeM.NEMap ReleaseGraphKey (ReleaseGraphNode, S.Set ReleaseGraphKey)
+    objs = NeM.map (\rez -> (NodeObjective rez, maybe S.empty S.singleton $ fmap KeyChange $ rezToMaybeChange rez))
+      $ NeM.mapKeysMonotonic KeyObjective objectives
+
+    fooo = NeL.toList
+      . NeL.map (\(k,(n, t)) -> (n, k, S.toList t))
+      . NeM.toList
+      $ unionNeM changes objs
+
+  in tupleDropThird $ G.graphFromEdges fooo
+  where
+    tupleDropThird (a, b, _) = (a, b)
+
+unionNeM :: Ord a => M.Map a b -> NeM.NEMap a b -> NeM.NEMap a b
+unionNeM m n = NeM.withNonEmpty n (<> n) m
+
+prettyObjectiveGraph
+  :: ( G.Graph
+     , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
+     )
+  -> Doc ann
+prettyObjectiveGraph (graph, _nodeFromVertex) =
+  viaShow $ G.dff graph
+
+getReleasePlan
+  :: ( G.Graph
+     , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
+     )
+  -> [ Change ]
+getReleasePlan (g, nodeFromVertex) =
+    mapMaybe (graphKeyToMaybeChange . snd3 . nodeFromVertex)
+    $ G.reverseTopSort g
+
+graphKeyToMaybeChange :: ReleaseGraphKey -> Maybe Change
+graphKeyToMaybeChange rgk = case rgk of
+  KeyChange c -> Just c
+  _           -> Nothing
+
+prettyReleasePlan :: [ Change ] -> Doc ann
+prettyReleasePlan = viaShow
+
+preformReleasePlan :: [Change] -> IO (Bool)
+preformReleasePlan [] = pure True
+preformReleasePlan (next:rest) = do
+  rez <- preformChange next
+  case rez of
+    True  -> preformReleasePlan rest
+    False -> pure False
