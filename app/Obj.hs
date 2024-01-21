@@ -11,6 +11,7 @@ import Util
 
 import Data.Map
 import Data.Text
+import Prettyprinter
 
 import Control.Lens.TH
 
@@ -19,7 +20,17 @@ data Objective
   | TagOnGH GitTag
   | ReleaseOnGH ObjectiveReleaseOnGH
   | FlakeOutputBuilt Text
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Pretty Objective where
+  pretty (LocalTag tag)
+    = "Local repo contains the tag " <> pretty tag
+  pretty (TagOnGH tag)
+    = "Repo at origin contains the tag " <> pretty tag
+  pretty (ReleaseOnGH ghRel)
+    = "The release \"" <> (pretty $ releaseOnGHTag ghRel) <> "\" is on GitHub"
+  pretty (FlakeOutputBuilt ref)
+    = "The flake output" <> pretty ref <> " is built"
 
 data ObjectiveReleaseOnGH = ObjectiveReleaseOnGH
   { _objectiveReleaseOnGHReleaseId                          :: ReleaseId
@@ -29,6 +40,17 @@ data ObjectiveReleaseOnGH = ObjectiveReleaseOnGH
   , _objectiveReleaseOnGHIncludeGithubGeneratedReleaseNotes :: Bool
   , _objectiveReleaseOnGHAssets                             :: (Map Text FlakeOutputPath)
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+releaseOnGHTitle :: ObjectiveReleaseOnGH -> Text
+releaseOnGHTitle ghRel
+  = _objectiveReleaseOnGHTitlePrefix ghRel
+  <> (renderReleaseId $ _objectiveReleaseOnGHReleaseId ghRel)
+
+releaseOnGHTag :: ObjectiveReleaseOnGH -> GitTag
+releaseOnGHTag ghRel = GitTag
+  { _gitTagReleaseId = _objectiveReleaseOnGHReleaseId ghRel
+  , _gitTagPrefix = _objectiveReleaseOnGHTagPrefix ghRel
+  }
 
 makeFields ''ObjectiveReleaseOnGH

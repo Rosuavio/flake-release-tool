@@ -7,7 +7,7 @@ import Data.Coerce
 import Data.Text
 
 newtype ReleaseId = ReleaseId Text
-  deriving newtype (Eq, Ord, Show)
+  deriving newtype (Eq, Ord)
 
 renderReleaseId :: ReleaseId -> Text
 renderReleaseId = coerce

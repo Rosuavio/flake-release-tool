@@ -5,6 +5,7 @@ import Obj (Objective (..), ObjectiveReleaseOnGH (..))
 import Sys
 import Util
 
+import Data.List.NonEmpty qualified as NeL
 import Data.Map qualified as M
 import Data.Map.NonEmpty (NEMap)
 import Data.Map.NonEmpty qualified as NeM
@@ -19,13 +20,37 @@ data Indicator
   = AlwaysPushTag
   | AlwaysCreateGithuRelease
   | AssetsToPublish
-  deriving (Enum, Bounded, Eq, Ord, Show)
+  deriving (Enum, Bounded, Eq, Ord)
+
+instance Pretty Indicator where
+  pretty AlwaysPushTag            = "git.tag.always-publish is True"
+  pretty AlwaysCreateGithuRelease = "github.release.always-publish is True"
+  pretty AssetsToPublish          = "github.release.assets contains assets"
+
+newtype IndicatedObjectives = IndicatedObjectives (NEMap Objective (NESet Indicator))
+
+instance Pretty IndicatedObjectives where
+  pretty (IndicatedObjectives m)
+    = vsep
+    . NeL.toList
+    . NeL.map prettyObjInd
+    $ NeM.toAscList m
+    where
+      prettyObjInd (k, v)
+        = nest 2
+        . vsep
+        $ pretty k
+          : (NeL.toList . NeL.map pretty $ NeS.toAscList v)
+
+objectiveFromIndicatedObjectives :: IndicatedObjectives -> NESet Objective
+objectiveFromIndicatedObjectives (IndicatedObjectives m) = NeM.keysSet m
 
 getUserObjectives
   :: ReleaseId
   -> ReleaseConfig
-  -> Maybe (NEMap Objective (NESet Indicator))
-getUserObjectives releaseId config = NeM.nonEmptyMap
+  -> Maybe (IndicatedObjectives)
+getUserObjectives releaseId config = fmap IndicatedObjectives
+  . NeM.nonEmptyMap
   . M.fromListWith NeS.union
   $ mapMaybe
       (\i -> fmap (\obj -> (obj, NeS.singleton i)) $ indicatorCheckConfig i releaseId config)
@@ -44,9 +69,6 @@ indicatorCheckConfig AssetsToPublish releaseId c =
   if not $ M.null (c ^. gitHub . release . assets)
     then Just $ mkReleaseOnGH releaseId c
     else Nothing
-
-prettyUserObjectives :: NEMap Objective (NESet Indicator) -> Doc ann
-prettyUserObjectives = viaShow
 
 mkReleaseOnGH :: ReleaseId -> ReleaseConfig -> Objective
 mkReleaseOnGH releaseId c = ReleaseOnGH $ ObjectiveReleaseOnGH

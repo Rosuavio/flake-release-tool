@@ -89,7 +89,7 @@ data FlakeOutputPath = FlakeOutputPath
   { _flakeOutputPathFlakeOuput :: Text
   , _flakeOutputPathPath       :: Maybe Text
   }
-  deriving stock (Eq, Ord, Show)
+  deriving stock (Eq, Ord)
 
 -- TODO: Figure out parseing individual strings as "FlakeOutputPath"
 instance FromYAML FlakeOutputPath where

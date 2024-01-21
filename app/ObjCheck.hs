@@ -24,7 +24,7 @@ data ObjectiveCheckResult
   = Achived
   | Achievable Change
   | NotAchievable
-  deriving (Show, Eq)
+  deriving Eq
 
 data ReleaseGraphNode
   = NodeObjective ObjectiveCheckResult
@@ -55,7 +55,7 @@ objectiveCheck (TagOnGH tagName) = do
         True  -> Achived
         False -> NotAchievable
 objectiveCheck (ReleaseOnGH obj) = do
-  rez <- gitHubReleaseExsistsForTag $ GitTag (obj ^. O.releaseId) (obj ^. O.tagPrefix)
+  rez <- gitHubReleaseExsistsForTag $ releaseOnGHTag obj
   pure $ case rez of
     -- TODO: Check if GitHub release matches the objective, if so determin that
     -- the Objective is Achived
@@ -75,7 +75,7 @@ changePreConditions :: Change -> S.Set Objective
 changePreConditions (CreateLocalTag _)             = S.empty
 changePreConditions (PushTagToOrigin tagName)      = S.singleton $ LocalTag tagName
 changePreConditions (CreateReleaseOnGH obj)
-  = S.fromList $ (TagOnGH $ GitTag (obj ^. C.releaseId) (obj ^. C.tagPrefix))
+  = S.fromList $ (TagOnGH $ createReleaseOnGHTag obj)
   : (map
       (FlakeOutputBuilt .  _flakeOutputPathFlakeOuput)
       (M.elems $ obj ^. C.assets)
@@ -179,7 +179,6 @@ graphFromObjectives objectives =
 
   in tupleDropThird $ G.graphFromEdges fooo
   where
-    tupleDropThird (a, b, _) = (a, b)
 
 unionNeM :: Ord a => M.Map a b -> NeM.NEMap a b -> NeM.NEMap a b
 unionNeM m n = NeM.withNonEmpty n (<> n) m
@@ -190,7 +189,26 @@ prettyObjectiveGraph
      )
   -> Doc ann
 prettyObjectiveGraph (graph, _nodeFromVertex) =
-  viaShow $ G.dff graph
+  vsep . fmap prettyObjTree $ G.dff graph
+  where
+    prettyObjTree :: G.Tree G.Vertex -> Doc ann
+    prettyObjTree (G.Node v []) = prettyVertex v
+    prettyObjTree (G.Node v xs) = nest 2
+      . vsep
+      $ prettyVertex v : (map prettyObjTree xs)
+
+    prettyVertex = prettyNode . tupleDropThird . _nodeFromVertex
+
+    prettyNode :: (ReleaseGraphNode, ReleaseGraphKey) -> Doc ann
+    prettyNode (NodeObjective Achived, KeyObjective k)
+      = "O - " <> pretty k <>" - Achived"
+    prettyNode (NodeObjective NotAchievable, KeyObjective k)
+      = "O - " <> pretty k <> " - NotAchievable"
+    prettyNode (NodeObjective (Achievable _), KeyObjective k)
+      = "O - " <> pretty k <> " - Achievable"
+    prettyNode (NodeChange, KeyChange k)
+      = "C - " <> pretty k
+    prettyNode _ = error "TODO"
 
 getReleasePlan
   :: ( G.Graph
@@ -207,7 +225,7 @@ graphKeyToMaybeChange rgk = case rgk of
   _           -> Nothing
 
 prettyReleasePlan :: [ Change ] -> Doc ann
-prettyReleasePlan = viaShow
+prettyReleasePlan = pretty
 
 preformReleasePlan :: [Change] -> IO (Bool)
 preformReleasePlan [] = pure True
@@ -216,3 +234,6 @@ preformReleasePlan (next:rest) = do
   case rez of
     True  -> preformReleasePlan rest
     False -> pure False
+
+tupleDropThird :: (a, b, c) -> (a, b)
+tupleDropThird (a, b, _) = (a, b)

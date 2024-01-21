@@ -12,6 +12,7 @@ import Util
 
 import Data.Map
 import Data.Text
+import Prettyprinter
 import System.Process.Typed
 
 import Control.Lens.TH
@@ -21,7 +22,18 @@ data Change
   | PushTagToOrigin GitTag
   | CreateReleaseOnGH ChangeCreateReleaseOnGH
   | BuildFlakeOuput Text
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Pretty Change where
+  pretty (CreateLocalTag tag)
+    = "Tag local repo with " <> pretty tag
+  pretty (PushTagToOrigin tag)
+    = "Push tag " <> pretty tag <> " to origin"
+  pretty (CreateReleaseOnGH c)
+    = "Create release \"" <> (pretty $ createReleaseOnGHTitle c)
+    <> "\" on GitHub for tag " <> (pretty $ createReleaseOnGHTag c)
+  pretty (BuildFlakeOuput ref)
+    = "Build " <> pretty ref
 
 data ChangeCreateReleaseOnGH = ChangeCreateReleaseOnGH
   { _changeCreateReleaseOnGHReleaseId                          :: ReleaseId
@@ -31,7 +43,19 @@ data ChangeCreateReleaseOnGH = ChangeCreateReleaseOnGH
   , _changeCreateReleaseOnGHIncludeGithubGeneratedReleaseNotes :: Bool
   , _changeCreateReleaseOnGHAssets                             :: Map Text FlakeOutputPath
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+createReleaseOnGHTitle :: ChangeCreateReleaseOnGH -> Text
+createReleaseOnGHTitle ghr
+  = _changeCreateReleaseOnGHTitlePrefix ghr
+  <> (renderReleaseId $ _changeCreateReleaseOnGHReleaseId ghr)
+
+createReleaseOnGHTag :: ChangeCreateReleaseOnGH -> GitTag
+createReleaseOnGHTag ghr = GitTag
+  { _gitTagReleaseId = _changeCreateReleaseOnGHReleaseId ghr
+  , _gitTagPrefix = _changeCreateReleaseOnGHTagPrefix ghr
+  }
+
 
 changeActions :: Change -> [Action]
 changeActions (CreateLocalTag tag)           = [ tagHeadWith tag ]

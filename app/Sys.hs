@@ -17,12 +17,16 @@ import Data.Text qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
 import Data.Traversable
+import Prettyprinter
 
 data GitTag = GitTag
   { _gitTagReleaseId :: ReleaseId
   , _gitTagPrefix    :: Text
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Pretty GitTag where
+  pretty = pretty . renderGitTag
 
 renderGitTag :: GitTag -> Text
 renderGitTag tag = (_gitTagPrefix tag) <> (renderReleaseId $ _gitTagReleaseId tag)
