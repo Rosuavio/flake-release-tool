@@ -235,7 +235,11 @@ graphKeyToMaybeChange rgk = case rgk of
   _           -> Nothing
 
 prettyReleasePlan :: NeL.NonEmpty Change-> Doc ann
-prettyReleasePlan = vsep . NeL.toList . fmap pretty
+prettyReleasePlan
+  = vsep
+  . NeL.toList
+  . fmap (\(i, c) -> pretty @Int i <> ". " <> pretty c)
+  . NeL.zip (1 NeL.:| [2..])
 
 preformReleasePlan :: NeL.NonEmpty Change -> IO (Bool)
 preformReleasePlan cs = go $ NeL.toList cs
