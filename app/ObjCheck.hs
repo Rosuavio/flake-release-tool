@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ObjCheck where
@@ -8,14 +9,13 @@ import Config (_flakeOutputPathFlakeOuput)
 import Obj as O
 import Sys
 
+import Data.Filtrable
 import Data.Graph qualified as G
 import Data.List.NonEmpty qualified as NeL
 import Data.Map qualified as M
 import Data.Map.NonEmpty qualified as NeM
-import Data.Maybe
 import Data.Set qualified as S
 import Data.Set.NonEmpty qualified as NeS
-import Data.Tuple.Extra
 import Prettyprinter
 
 import Control.Lens
@@ -90,20 +90,6 @@ evalObjectiveGraph
 evalObjectiveGraph objectives = do
   o <- evalAllObjectives objectives
   pure $ graphFromObjectives o
-
-canAchiveObjectives
-  :: ( G.Graph
-     , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
-     )
-  -> Bool
-canAchiveObjectives (g, nodeFromVertex) =
-  all
-    (not . isNotAchievableObj . fst3 . nodeFromVertex)
-    (G.vertices g)
-  where
-    isNotAchievableObj node = case node of
-      NodeObjective NotAchievable -> True
-      _                           -> False
 
 evalAllObjectives
   :: NeS.NESet Objective
@@ -210,30 +196,56 @@ prettyObjectiveGraph (graph, _nodeFromVertex) =
       = "C - " <> pretty k
     prettyNode _ = error "TODO"
 
+data ReleaseResult
+  = ReleaseAchived
+  | ReleaseNotAchievable
+  | ReleaseAchivable (NeL.NonEmpty Change)
+  -- Should not ever be the case, only a case because we do not have non-empty
+  -- graph
+  | ReleaseEmpty
+
 getReleasePlan
   :: ( G.Graph
      , G.Vertex -> (ReleaseGraphNode, ReleaseGraphKey, [ReleaseGraphKey])
      )
-  -> [ Change ]
+  -> ReleaseResult
 getReleasePlan (g, nodeFromVertex) =
-    mapMaybe (graphKeyToMaybeChange . snd3 . nodeFromVertex)
-    $ G.reverseTopSort g
+  case bimap NeL.nonEmpty NeL.nonEmpty . splitObjChange . map nodeFromVertex $ G.reverseTopSort g of
+    (Nothing, _) -> ReleaseEmpty
+    (Just objectives, mChanges) ->
+      case objsAchiveable objectives of
+        False -> ReleaseNotAchievable
+        True -> case mChanges of
+          Nothing      -> ReleaseAchived
+          Just changes -> ReleaseAchivable changes
+  where
+    splitObjChange = mapEither $ \case
+      (NodeObjective rez, KeyObjective o, _) -> Left (o, rez)
+      (NodeChange, KeyChange c, _) -> Right c
+      _ -> error "Fatal error"
+
+
+    objsAchiveable = all $ \case
+      (_, NotAchievable) -> False
+      _ -> True
 
 graphKeyToMaybeChange :: ReleaseGraphKey -> Maybe Change
 graphKeyToMaybeChange rgk = case rgk of
   KeyChange c -> Just c
   _           -> Nothing
 
-prettyReleasePlan :: [ Change ] -> Doc ann
-prettyReleasePlan = pretty
+prettyReleasePlan :: NeL.NonEmpty Change-> Doc ann
+prettyReleasePlan = vsep . NeL.toList . fmap pretty
 
-preformReleasePlan :: [Change] -> IO (Bool)
-preformReleasePlan [] = pure True
-preformReleasePlan (next:rest) = do
-  rez <- preformChange next
-  case rez of
-    True  -> preformReleasePlan rest
-    False -> pure False
+preformReleasePlan :: NeL.NonEmpty Change -> IO (Bool)
+preformReleasePlan cs = go $ NeL.toList cs
+  where
+    go [] = pure True
+    go (next:rest) = do
+      rez <- preformChange next
+      case rez of
+        True  -> go rest
+        False -> pure False
 
 tupleDropThird :: (a, b, c) -> (a, b)
 tupleDropThird (a, b, _) = (a, b)

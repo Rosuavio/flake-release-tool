@@ -29,20 +29,20 @@ main = do
         g <- evalObjectiveGraph
           $ objectiveFromIndicatedObjectives userObjectives
 
-        let
-          releasePlan = getReleasePlan g
-          canPreformRelease = canAchiveObjectives g
-
         putStrLn "Release Graph"
         putDoc $ prettyObjectiveGraph g
         putChar '\n'
 
-        case canPreformRelease of
-          False -> do
+        case getReleasePlan g of
+          ReleaseEmpty -> do
+            putStrLn "Empty release graph" -- Should not happen, fatal error
+            putStrLn "Cannot preform release"
+          ReleaseNotAchievable -> do
             putStrLn "There are release objectives not achievable by the release tool"
             putStrLn "Cannot preform release."
-          True -> do
-
+          ReleaseAchived ->
+            putStrLn "Release already achieved."
+          ReleaseAchivable releasePlan -> do
             putStrLn "Release Plan"
             putDoc $ prettyReleasePlan releasePlan
             putChar '\n'

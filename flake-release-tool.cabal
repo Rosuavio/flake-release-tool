@@ -54,6 +54,7 @@ executable flake-release-tool
     , containers
     , data-default
     , extra
+    , filtrable
     , flake-release-tool
     , HsYAML
     , lens
