@@ -50,7 +50,7 @@ main = do
             rez <- preformReleasePlan releasePlan
 
             case rez of
-              True  -> putStrLn "Release plan completed successfuly"
+              True  -> putStrLn "Release plan completed successfully"
               False -> putStrLn "Release plan failed"
   where
     opts = info (args <**> helper)
