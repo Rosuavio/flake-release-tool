@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
@@ -6,60 +7,93 @@ import Indicator
 import ObjCheck
 import Util
 
+import Control.Exception
+import Control.Monad
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Except
 import Data.ByteString.Lazy qualified as BS
 import Data.Text
 import Data.YAML (decode1, prettyPosWithSource)
 import Options.Applicative
 import Prettyprinter
 import Prettyprinter.Render.Text
+import System.Exit
 
 main :: IO ()
 main = do
   releaseId <- execParser opts
-  raw <- BS.readFile "release.yaml"
-  case decode1 @ReleaseConfig raw of
-    Left (loc,emsg) -> putStrLn ("release.yaml:" ++ prettyPosWithSource loc raw " error" ++ emsg)
-    Right c -> case getUserObjectives releaseId c of
-      Nothing -> putStrLn "No user objectives"
-      Just userObjectives -> do
-        putStrLn "Targeting the following user objectives for the specified reasons."
-        putDoc $ pretty userObjectives
-        putChar '\n'
 
-        g <- evalObjectiveGraph
-          $ objectiveFromIndicatedObjectives userObjectives
+  join . fmap (exitWith . either ExitFailure (const ExitSuccess)) . runExceptT $ do
+    raw <- handleException @SomeException (BS.readFile "release.yaml") $ \_ -> do
+      lift $ putStrLn "Error reading config file"
+      throwE 2
 
-        putStrLn "Release Graph"
-        putDoc $ prettyObjectiveGraph g
-        putChar '\n'
+    config <- onLeft (decode1 @ReleaseConfig raw) pure $ \(loc,emsg) -> do
+      lift $ putStrLn ("release.yaml:" ++ prettyPosWithSource loc raw " error" ++ emsg)
+      throwE 3
 
-        case getReleasePlan g of
-          ReleaseEmpty -> do
-            putStrLn "Empty release graph" -- Should not happen, fatal error
-            putStrLn "Cannot preform release"
-          ReleaseNotAchievable -> do
-            putStrLn "There are release objectives not achievable by the release tool"
-            putStrLn "Cannot preform release."
-          ReleaseAchived ->
-            putStrLn "Release already achieved."
-          ReleaseAchivable releasePlan -> do
-            putStrLn "Release Plan"
-            putDoc $ prettyReleasePlan releasePlan
-            putChar '\n'
+    userObjectives <- onNothing (getUserObjectives releaseId config) pure $ do
+      lift $ putStrLn "No user objectives"
+      throwE 4
 
-            rez <- preformReleasePlan releasePlan
+    lift $ putStrLn "Targeting the following user objectives for the specified reasons."
+    lift $ putDoc $ pretty userObjectives
+    lift $ putChar '\n'
 
-            case rez of
-              True  -> putStrLn "Release plan completed successfully"
-              False -> putStrLn "Release plan failed"
+    g <- handleException @SomeException
+      (evalObjectiveGraph $ objectiveFromIndicatedObjectives userObjectives)
+      $ \_ -> do
+        lift $ putStrLn "Error evalutating objective graph"
+        throwE 5
+
+    lift $ putStrLn "Release Graph"
+    lift $ putDoc $ prettyObjectiveGraph g
+    lift $ putChar '\n'
+
+    releasePlan <- case getReleasePlan g of
+      ReleaseAchivable relPlan -> pure relPlan
+      ReleaseEmpty -> do
+        lift $ putStrLn "Empty release graph" -- Should not happen, fatal error
+        lift $ putStrLn "Cannot preform release"
+        throwE 6
+      ReleaseNotAchievable -> do
+        lift $ putStrLn "There are release objectives not achievable by the release tool"
+        lift $ putStrLn "Cannot preform release."
+        throwE 7
+      ReleaseAchived -> do
+        lift $ putStrLn "Release already achieved."
+        throwE 8
+
+    lift $ putStrLn "Release Plan"
+    lift $ putDoc $ prettyReleasePlan releasePlan
+    lift $ putChar '\n'
+
+    rez <- handleException @SomeException (preformReleasePlan releasePlan) $ \_ -> do
+      lift $ putStrLn "Error preforming release plan"
+      throwE 9
+
+    when (rez == False) $ do
+      lift $ putStrLn "Release plan failed"
+      throwE 10
+
+    lift $ putStrLn "Release plan completed successfully"
   where
     opts = info (args <**> helper)
       ( fullDesc
       <> progDesc "Create a software release from a git repo using nix flakes"
       <> header "flake-release-tool - create software releases"
+      <> failureCode 1
       )
 
-args :: Parser ReleaseId
-args = fmap (ReleaseId . pack) $ strArgument
-  ( metavar "RELEASE_ID"
-  <> help "The Release Identifier" )
+    args :: Parser ReleaseId
+    args = fmap (ReleaseId . pack) $ strArgument
+      ( metavar "RELEASE_ID"
+      <> help "The Release Identifier" )
+
+    handleException :: Exception e => IO a -> (e -> ExceptT Int IO a) -> ExceptT Int IO a
+    handleException f onError = ExceptT $ try f >>= \case
+      Right r -> pure $ Right r
+      Left e -> runExceptT $ onError e
+
+    onNothing m j d = maybe d j m
+    onLeft e r l = either l r e

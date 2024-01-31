@@ -62,6 +62,7 @@ executable flake-release-tool
     , optparse-applicative
     , prettyprinter
     , text
+    , transformers
     , typed-process
 
   hs-source-dirs: app
