@@ -34,7 +34,7 @@ main = do
 
     userObjectives <- onNothing (getUserObjectives releaseId config) pure $ do
       lift $ putStrLn "No user objectives"
-      throwE 4
+      throwE 0
 
     lift $ putStrLn "Targeting the following user objectives for the specified reasons."
     lift $ putDoc $ pretty userObjectives
@@ -62,7 +62,7 @@ main = do
         throwE 7
       ReleaseAchived -> do
         lift $ putStrLn "Release already achieved."
-        throwE 8
+        throwE 0
 
     lift $ putStrLn "Release Plan"
     lift $ putDoc $ prettyReleasePlan releasePlan
