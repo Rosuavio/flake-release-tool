@@ -36,9 +36,10 @@ main = do
       lift $ putStrLn "No user objectives"
       throwE 0
 
-    lift $ putStrLn "Targeting the following user objectives for the specified reasons."
-    lift $ putDoc $ pretty userObjectives
-    lift $ putChar '\n'
+    lift $ do
+      putStrLn "Targeting the following user objectives for the specified reasons."
+      putDoc $ pretty userObjectives
+      putChar '\n'
 
     g <- handleException @SomeException
       (evalObjectiveGraph $ objectiveFromIndicatedObjectives userObjectives)
@@ -46,27 +47,31 @@ main = do
         lift $ putStrLn "Error evalutating objective graph"
         throwE 5
 
-    lift $ putStrLn "Release Graph"
-    lift $ putDoc $ prettyObjectiveGraph g
-    lift $ putChar '\n'
+    lift $ do
+      putStrLn "Release Graph"
+      putDoc $ prettyObjectiveGraph g
+      putChar '\n'
 
     releasePlan <- case getReleasePlan g of
       ReleaseAchivable relPlan -> pure relPlan
       ReleaseEmpty -> do
-        lift $ putStrLn "Empty release graph" -- Should not happen, fatal error
-        lift $ putStrLn "Cannot preform release"
+        lift $ do
+          putStrLn "Empty release graph" -- Should not happen, fatal error
+          putStrLn "Cannot preform release"
         throwE 6
       ReleaseNotAchievable -> do
-        lift $ putStrLn "There are release objectives not achievable by the release tool"
-        lift $ putStrLn "Cannot preform release."
+        lift $ do
+          putStrLn "There are release objectives not achievable by the release tool"
+          putStrLn "Cannot preform release."
         throwE 7
       ReleaseAchived -> do
         lift $ putStrLn "Release already achieved."
         throwE 0
 
-    lift $ putStrLn "Release Plan"
-    lift $ putDoc $ prettyReleasePlan releasePlan
-    lift $ putChar '\n'
+    lift $ do
+      putStrLn "Release Plan"
+      putDoc $ prettyReleasePlan releasePlan
+      putChar '\n'
 
     rez <- handleException @SomeException (preformReleasePlan releasePlan) $ \_ -> do
       lift $ putStrLn "Error preforming release plan"
