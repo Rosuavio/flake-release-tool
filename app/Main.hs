@@ -18,9 +18,22 @@ import Options.Applicative
 import Prettyprinter
 import Prettyprinter.Render.Text
 import System.Exit
+import FastDownward
+import FastDownward.Exec qualified as Exec
 
 main :: IO ()
 main = do
+  rezz <- runProblem problem
+  case rezz of
+    Solved plan -> do
+      putStrLn "Found a plan!"
+      zipWithM_
+        ( \i step -> putStrLn ( show i ++ ": " ++ show step ) )
+        [ 1::Int .. ]
+        ( totallyOrderedPlan plan )
+    _ ->
+      putStrLn "Couldn't find a plan!"
+
   releaseId <- execParser opts
 
   join . fmap (exitWith . either ExitFailure (const ExitSuccess)) . runExceptT $ do
@@ -102,3 +115,20 @@ main = do
 
     onNothing m j d = maybe d j m
     onLeft e r l = either l r e
+
+type Foo = Var Text
+
+problem :: Problem (SolveResult Text)
+problem = do
+  aaa <- newVar ("" :: Text)
+
+  let
+    ggg :: Effect Text
+    ggg = do
+      fff <- readVar aaa
+      pure fff
+
+  solve
+    Exec.bjolp
+    [ ggg ]
+    [ aaa ?= "" ]
